@@ -251,10 +251,6 @@ namespace TOSTeamVisitsIcons
                                             {
                                                 teammateTargetingPosition = teammateTarget2;
                                             }
-                                            if (teammateRole == Role.DOOMSAYER)
-                                            {
-                                                teammateTargetingPosition = teammatePosition;
-                                            }
                                             switch (ModSettings.GetString("Special Ability Icon"))
                                             {
                                                 case "No Icon":
@@ -406,6 +402,31 @@ namespace TOSTeamVisitsIcons
             image.transform.localPosition = new Vector3(80 + 32 * (visits[targetPlayer].Count - 1), 0, 0);
             image.gameObject.SetActive(true);
         }
+        internal int TargetsCount(MenuChoiceType abilityId, Role role, int actorPlayer)
+        {
+            int counter = 0;
+            string roleName = $"{role}({actorPlayer})";
+            if (abilityId == MenuChoiceType.NightAbility2)
+            {
+                roleName += "2";
+            }
+            else if (abilityId == MenuChoiceType.SpecialAbility)
+            {
+                roleName += "S";
+            }
+            Console.WriteLine("TOSTVID count target: " + roleName);
+            foreach (List<Image> imgs in visits.Values)
+            {
+                for (int i = 0; i < imgs.Count; i++)
+                {
+                    if (imgs[i].gameObject.name == roleName)
+                    {
+                        counter++;
+                    }
+                }
+            }
+            return counter;
+        }
         internal void CancelTarget(MenuChoiceType abilityId, Role role, int actorPlayer)
         {
             //Removes the requested sprite from the list of sprites
@@ -480,6 +501,12 @@ namespace TOSTeamVisitsIcons
                 case Role.COVENLEADER:
                     CancelTarget(MenuChoiceType.SpecialAbility, role, actorPlayer);
                     CancelTarget(MenuChoiceType.NightAbility, role, actorPlayer);
+                    break;
+                case Role.DOOMSAYER:
+                    if (TargetsCount(MenuChoiceType.SpecialAbility, role, actorPlayer) >= 3)
+                    {
+                        CancelTarget(MenuChoiceType.SpecialAbility, role, actorPlayer);
+                    }
                     break;
                 default:
                     CancelTarget(abilityId, role, actorPlayer);
