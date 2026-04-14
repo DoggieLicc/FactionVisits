@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Reflection;
-using System.Security.Policy;
+using System.Security;
 using Game.Interface;
 using Game.Simulation;
 using HarmonyLib;
@@ -22,6 +22,7 @@ namespace TOSTeamVisitsIcons
     internal class Interpreter
     {
         static RoleCardPanel panel = null;
+        public static Dictionary<int, int> summonTargets = new Dictionary<int, int>();
         internal static void HandleMessages(ChatLogMessage chatLogMessage)
         {
             if (Service.Game.Sim.info.gameInfo.Data.gamePhase == GamePhase.PLAY && (chatLogMessage.chatLogEntry is ChatLogFactionTargetSelectionFeedbackEntry || chatLogMessage.chatLogEntry is ChatLogTargetSelectionFeedbackEntry))
@@ -32,7 +33,7 @@ namespace TOSTeamVisitsIcons
                     Role teammateRole;
                     int teammateTarget1;
                     int teammateTarget2;
-                    Role? teammateTargetRole;
+                    Role teammateTargetRole;
                     bool hasNecronomicon;
                     bool isChangingTarget;
                     bool isCancel;
@@ -166,47 +167,49 @@ namespace TOSTeamVisitsIcons
                                                 break;
                                         }
                                     }
-                                    if (ModSettings.GetBool("Role Revival Icon") && (teammateRole == Role.NECROMANCER || teammateRole == Role.RETRIBUTIONIST) && menuChoiceType == MenuChoiceType.NightAbility2)
+                                    if (ModSettings.GetBool("Role Revival Icon") && (teammateRole == Role.NECROMANCER || teammateRole == Role.RETRIBUTIONIST))
                                     {
-                                        //Find who is been revived
-                                        int target1 = -1;
-                                        int counter = -1;
-                                        bool found = false;
-                                        foreach (List<Image> imgs in Manager.Instance.visits.Values)
+                                        if (menuChoiceType == MenuChoiceType.SpecialAbility)
                                         {
-                                            counter++;
-                                            for (int i = 0; i < imgs.Count; i++)
+                                            //Add summon info to cache
+                                            Console.WriteLine("TOSTVI adding summon target to cache");
+                                            if(summonTargets.ContainsKey(teammatePosition))
                                             {
-                                                if (imgs[i] != null && imgs[i].gameObject.name == $"{teammateRole}({teammatePosition})S")
+                                                summonTargets.Remove(teammatePosition);
+                                            }
+                                            summonTargets.Add(teammatePosition, teammateTarget1);
+                                        }
+                                        else {
+                                            try
+                                            {
+                                                int summonTarget = summonTargets[teammatePosition];
+                                                Role revivalRole = Manager.Instance.Panel.playerListPlayers[summonTarget].playerRole;
+                                                //Check if is valid know role
+                                                if (revivalRole != Role.NONE && revivalRole != Role.STONED && revivalRole != Role.HIDDEN)
                                                 {
-                                                    target1 = counter;
-                                                    break;
+                                                    UIRoleData.UIRoleDataInstance revivalRoleData = panel.roleData.roleDataList.Find((UIRoleData.UIRoleDataInstance d) => d.role == revivalRole);
+                                                    if (revivalRoleData != null && revivalRoleData.roleIcon != null)
+                                                    {
+                                                        sprite = Manager.GetSprite(revivalRoleData, panel, 0);
+                                                    }
+                                                    else 
+                                                    {
+                                                        Console.WriteLine("TOSTVIRI revival role icon not found");
+                                                        sprite = Manager.GetSprite(roleData, panel, 2);
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    //If unable to get icon of the role been revived, put ability 2 icon
+                                                    Console.WriteLine("TOSTVIRI invalid revival role");
+                                                    sprite = Manager.GetSprite(roleData, panel, 2);
                                                 }
                                             }
-                                            if (target1 != -1) break;
-                                        }
-                                        //Checks if revival target was found
-                                        if (target1 != -1)
-                                        {
-                                            Role revivalRole = Manager.Instance.Panel.playerListPlayers[target1].playerRole;
-                                            //Check if is valid know role
-                                            if (revivalRole != Role.NONE && revivalRole != Role.STONED && revivalRole != Role.HIDDEN)
+                                            catch (KeyNotFoundException)
                                             {
-                                                UIRoleData.UIRoleDataInstance revivalRoleData = panel.roleData.roleDataList.Find((UIRoleData.UIRoleDataInstance d) => d.role == revivalRole);
-                                                if (revivalRoleData != null && revivalRoleData.roleIcon != null)
-                                                {
-                                                    sprite = Manager.GetSprite(revivalRoleData, panel, 0);
-                                                    found = true;
-                                                }
-                                                else { Console.WriteLine("TOSTVIRI revival role icon not found"); }
+                                                Console.WriteLine("TOSTVIRI summon info not found");
+                                                sprite = Manager.GetSprite(roleData, panel, 2);
                                             }
-                                            else { Console.WriteLine("TOSTVIRI invalid revival role"); }
-                                        }
-                                        else { Console.WriteLine("TOSTVIRI summoning target not found"); }
-                                        //If unable to get icon of the role been revived, put ability 2 icon
-                                        if (!found)
-                                        {
-                                            sprite = Manager.GetSprite(roleData, panel, 2);
                                         }
                                     }
                                     //Add 2nd ability icon no matter the option selected to avoid duplicated icons
@@ -255,7 +258,7 @@ namespace TOSTeamVisitsIcons
                                                 teammateTargetingPosition = teammateTarget2;
                                             }
                                             //Will add oracle icon to all known aegis targets
-                                            if (teammateTargetingPosition == teammatePosition && teammateTargetRole != null && ModSettings.GetString("Special Ability Icon") != "No Icon")
+                                            if (teammateTargetingPosition == teammatePosition && (teammateTargetRole != Role.NONE) && ModSettings.GetString("Special Ability Icon") != "No Icon")
                                             {
                                                 Manager.Instance.CancelTarget(MenuChoiceType.SpecialAbility, teammateRole, teammatePosition);
                                                 foreach (TosAbilityPanelListItem player in Manager.Instance.Panel.playerListPlayers)
@@ -549,6 +552,7 @@ namespace TOSTeamVisitsIcons
                     }
                 }
             }
+            Interpreter.summonTargets.Clear();
         }
 
         internal static Sprite GetSprite(UIRoleData.UIRoleDataInstance instance, RoleCardPanel panel, int ability = 0)
