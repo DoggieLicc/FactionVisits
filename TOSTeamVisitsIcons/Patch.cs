@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Reflection;
-using System.Security;
 using Game.Interface;
 using Game.Simulation;
 using HarmonyLib;
@@ -149,6 +148,17 @@ namespace TOSTeamVisitsIcons
                                             if (!sprite)
                                             {
                                                 sprite = Manager.GetSprite(roleData, panel, 1);
+                                            }
+                                            //Fail-Failsafe
+                                            if (!sprite)
+                                            {
+                                                sprite = Manager.GetSprite(roleData, panel, 3);
+                                            }
+                                            //Fail-Fail-Failsafe
+                                            if (!sprite)
+                                            {
+                                                Console.WriteLine("TOSTVIRI - No sprites found, using role");
+                                                sprite = Manager.GetSprite(roleData, panel, 0);
                                             }
                                         }
                                     }
