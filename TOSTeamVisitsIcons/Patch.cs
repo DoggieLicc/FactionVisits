@@ -290,6 +290,9 @@ namespace TOSTeamVisitsIcons
     internal class Cleaner
     {
         static bool hooked = false;
+        static bool clearedDayIcons = false;
+        static bool clearedNightIcons = false;
+
         [HarmonyPatch("HandleGameInfo")]
         [HarmonyPostfix]
         static void ClearIcons(GameInfoObservation gameInfoObservation)
@@ -306,10 +309,29 @@ namespace TOSTeamVisitsIcons
                 Console.WriteLine("TOSTVI removing hook");
                 Service.Game.Sim.simulation.incomingChatLogMessage.OnChanged -= Interpreter.HandleMessages;
             }
-            if (gameInfoObservation.Data.gamePhase == GamePhase.PLAY && (gameInfoObservation.Data.playPhase == PlayPhase.NIGHT || gameInfoObservation.Data.playPhase == PlayPhase.NIGHT_WRAP_UP))
+            // Clear Day Icons as we enter Night Phase
+            if (gameInfoObservation.Data.gamePhase == GamePhase.PLAY && gameInfoObservation.Data.playPhase == PlayPhase.NIGHT)
             {
-                Console.WriteLine($"TOSTVI Requesting icons clear because of playphase: " + gameInfoObservation.Data.playPhase);
-                Manager.Instance.Clear();
+                // tos2 retriggers this if someone dcs at night, make sure to not clear our night icons
+                if (!clearedDayIcons)
+                {
+                    Console.WriteLine($"TOSTVI Requesting icons clear because of playphase: " + gameInfoObservation.Data.playPhase);
+                    Manager.Instance.Clear();
+                    clearedDayIcons = true;
+                }
+                clearedNightIcons = false;
+            }
+            // Clear Night Icons as we enter Day Phase
+            if (gameInfoObservation.Data.gamePhase == GamePhase.PLAY && gameInfoObservation.Data.playPhase == PlayPhase.NIGHT_WRAP_UP)
+            {
+                //just in case
+                if (!clearedNightIcons)
+                {
+                    Console.WriteLine($"TOSTVI Requesting icons clear because of playphase: " + gameInfoObservation.Data.playPhase);
+                    Manager.Instance.Clear();
+                    clearedNightIcons = true;
+                }
+                clearedDayIcons = false;
             }
         }
     }
