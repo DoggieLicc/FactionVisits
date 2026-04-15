@@ -3,6 +3,10 @@
   "DisplayName": "Faction Visits",
   "Authors": [ "Pokegustavo" ],
   "Description": "Shows who your faction allies are visiting during the night",
+<<<<<<< HEAD
   "Version": "1.2.3",
+=======
+  "Version": "1.1.4",
+>>>>>>> 8c5d4e30150c9a65addad1f5cabcd3e25c444529
   "RequiredMods": []
 }
