@@ -44,320 +44,311 @@ namespace TOSTeamVisitsIcons
         };
         internal static void HandleMessages(ChatLogMessage chatLogMessage)
         {
-            if (Service.Game.Sim.info.gameInfo.Data.gamePhase == GamePhase.PLAY && (chatLogMessage.chatLogEntry is ChatLogFactionTargetSelectionFeedbackEntry || chatLogMessage.chatLogEntry is ChatLogTargetSelectionFeedbackEntry))
+            if (!(Service.Game.Sim.info.gameInfo.Data.gamePhase == GamePhase.PLAY && (chatLogMessage.chatLogEntry is ChatLogFactionTargetSelectionFeedbackEntry || chatLogMessage.chatLogEntry is ChatLogTargetSelectionFeedbackEntry))) return;
+            try
             {
-                try
+                int teammatePosition;
+                Role teammateRole;
+                int teammateTarget1;
+                int teammateTarget2;
+                Role teammateTargetRole;
+                bool hasNecronomicon;
+                bool isChangingTarget;
+                bool isCancel;
+                MenuChoiceType menuChoiceType;
+
+                if (chatLogMessage.chatLogEntry is ChatLogFactionTargetSelectionFeedbackEntry)
                 {
-                    int teammatePosition;
-                    Role teammateRole;
-                    int teammateTarget1;
-                    int teammateTarget2;
-                    Role teammateTargetRole;
-                    bool hasNecronomicon;
-                    bool isChangingTarget;
-                    bool isCancel;
-                    MenuChoiceType menuChoiceType;
-
-                    if (chatLogMessage.chatLogEntry is ChatLogFactionTargetSelectionFeedbackEntry)
+                    ChatLogFactionTargetSelectionFeedbackEntry data = chatLogMessage.chatLogEntry as ChatLogFactionTargetSelectionFeedbackEntry;
+                    teammatePosition = data.teammatePosition;
+                    teammateRole = data.teammateRole;
+                    teammateTarget1 = data.teammateTargetingPosition1;
+                    teammateTarget2 = data.teammateTargetingPosition2;
+                    teammateTargetRole = data.teammatesTargetRole;
+                    hasNecronomicon = data.bHasNecronomicon;
+                    isChangingTarget = data.bIsChangingTarget;
+                    isCancel = data.bIsCancel;
+                    menuChoiceType = data.menuChoiceType;
+                }
+                else
+                {
+                    GameSimulation gameSimulation = Service.Game.Sim.simulation;
+                    RoleCardObservation roleCardObservation = Service.Game.Sim.info.roleCardObservation;
+                    ChatLogTargetSelectionFeedbackEntry data = chatLogMessage.chatLogEntry as ChatLogTargetSelectionFeedbackEntry;
+                    switch (ModSettings.GetString("Show Own Actions"))
                     {
-                        ChatLogFactionTargetSelectionFeedbackEntry data = chatLogMessage.chatLogEntry as ChatLogFactionTargetSelectionFeedbackEntry;
-                        teammatePosition = data.teammatePosition;
-                        teammateRole = data.teammateRole;
-                        teammateTarget1 = data.teammateTargetingPosition1;
-                        teammateTarget2 = data.teammateTargetingPosition2;
-                        teammateTargetRole = data.teammatesTargetRole;
-                        hasNecronomicon = data.bHasNecronomicon;
-                        isChangingTarget = data.bIsChangingTarget;
-                        isCancel = data.bIsCancel;
-                        menuChoiceType = data.menuChoiceType;
-                    }
-                    else
-                    {
-                        GameSimulation gameSimulation = Service.Game.Sim.simulation;
-                        RoleCardObservation roleCardObservation = Service.Game.Sim.info.roleCardObservation;
-                        ChatLogTargetSelectionFeedbackEntry data = chatLogMessage.chatLogEntry as ChatLogTargetSelectionFeedbackEntry;
-                        switch (ModSettings.GetString("Show Own Actions"))
-                        {
-                            default:
-                            case "Never":
-                                return;
-                            case "Only as Factional Evil":
-                                PlayerIdentityData myIdentity = (PlayerIdentityData)gameSimulation.myIdentity;
-                                FactionType faction = myIdentity.faction;
-                                if (!(faction == FactionType.COVEN || faction == FactionType.APOCALYPSE || faction == FactionType.VAMPIRE || faction == FactionType.CURSED_SOUL))
-                                {
-                                    return;
-                                }
-                                break;
-                            case "Always":
-                                break;
-                        }
-                        teammatePosition = gameSimulation.myPosition;
-                        teammateRole = data.currentRole;
-                        teammateTarget1 = data.playerNumber1;
-                        teammateTarget2 = data.playerNumber2;
-                        teammateTargetRole = data.targetRoleId;
-                        hasNecronomicon = roleCardObservation.Data.hasNecronomicon;
-                        isChangingTarget = data.bIsChangingTarget;
-                        isCancel = data.bIsCancel;
-                        menuChoiceType = data.menuChoiceType;
-                    }
-
-                    //Only care about non-instant day abilites
-                    if (Service.Game.Sim.info.gameInfo.Data.playPhase != PlayPhase.NIGHT)
-                    {
-                        if (!ModSettings.GetBool("Day Ability Icons") || !(teammateRole == Role.JAILOR || teammateRole == Role.ADMIRER || teammateRole == Role.CORONER || teammateRole == Role.SOCIALITE || teammateRole == Role.CULTIST))
-                        {
+                        default:
+                        case "Never":
                             return;
+                        case "Only as Factional Evil":
+                            PlayerIdentityData myIdentity = (PlayerIdentityData)gameSimulation.myIdentity;
+                            FactionType faction = myIdentity.faction;
+                            if (!(faction == FactionType.COVEN || faction == FactionType.APOCALYPSE || faction == FactionType.VAMPIRE || faction == FactionType.CURSED_SOUL))
+                            {
+                                return;
+                            }
+                            break;
+                        case "Always":
+                            break;
+                    }
+                    teammatePosition = gameSimulation.myPosition;
+                    teammateRole = data.currentRole;
+                    teammateTarget1 = data.playerNumber1;
+                    teammateTarget2 = data.playerNumber2;
+                    teammateTargetRole = data.targetRoleId;
+                    hasNecronomicon = roleCardObservation.Data.hasNecronomicon;
+                    isChangingTarget = data.bIsChangingTarget;
+                    isCancel = data.bIsCancel;
+                    menuChoiceType = data.menuChoiceType;
+                }
+
+                //Only care about non-instant day abilites
+                if (Service.Game.Sim.info.gameInfo.Data.playPhase != PlayPhase.NIGHT)
+                {
+                    if (!ModSettings.GetBool("Day Ability Icons") || !(teammateRole == Role.JAILOR || teammateRole == Role.ADMIRER || teammateRole == Role.CORONER || teammateRole == Role.SOCIALITE || teammateRole == Role.CULTIST))
+                    {
+                        return;
+                    }
+                }
+
+                UIRoleData.UIRoleDataInstance roleData = null;
+                Console.Write($"TOSTVI recieved message: player {teammatePosition + 1} (role {teammateRole}) has decided to ");
+                if (isCancel)
+                {
+                    Console.WriteLine($"Cancel their night ability");
+                }
+                else if (isChangingTarget)
+                {
+                    Console.WriteLine($"Change their target to {teammateTarget1}");
+                }
+                else
+                {
+                    Console.WriteLine($"Target {teammateTarget1}");
+                }
+                Console.WriteLine($"They {(hasNecronomicon ? "have" : "don't have")} the necronomicon!");
+                if (panel == null)
+                {
+                    panel = UnityEngine.Object.FindObjectOfType<RoleCardPanel>();
+                    Console.WriteLine("TOSTVI panel was null, a new one was grabbed");
+                }
+                if (panel == null)
+                {
+                    Console.WriteLine("TOSTVI There was no panel");
+                    return;
+                }
+                roleData = panel.roleData.roleDataList.Find((UIRoleData.UIRoleDataInstance d) => d.role == teammateRole);
+
+                if (roleData == null || roleData.roleIcon == null) return;
+
+                Console.WriteLine("TOSTVI all roledata grabed with success");
+                if (isCancel)
+                {
+                    Manager.Instance.CancelTarget(menuChoiceType, teammateRole, teammatePosition);
+                    if (menuChoiceType == MenuChoiceType.SpecialAbility && (teammateRole == Role.NECROMANCER || teammateRole == Role.RETRIBUTIONIST))
+                    {
+                        Manager.Instance.CancelTarget(MenuChoiceType.NightAbility2, teammateRole, teammatePosition);
+                    }
+                    return;
+                }
+                Console.WriteLine("TOSTVI grabbing sprite");
+                //By default use role icon
+                Sprite sprite = Manager.GetSprite(roleData, panel, 0);
+                Sprite sprite2 = null;
+                //Apply ability icon in case option is enabled
+                if (ModSettings.GetString("Display Mode") == "No Icon")
+                {
+                    sprite = null;
+                }
+                if (ModSettings.GetString("Display Mode") == "Ability Icon")
+                {
+                    if (menuChoiceType == MenuChoiceType.NightAbility || ((teammateRole == Role.ILLUSIONIST || teammateRole == Role.JAILOR) && menuChoiceType == MenuChoiceType.NightAbility2))
+                    {
+                        sprite = Manager.GetSprite(roleData, panel, 1);
+                    }
+                    else if (menuChoiceType == MenuChoiceType.NightAbility2)
+                    {
+                        sprite = Manager.GetSprite(roleData, panel, 2);
+                        //Failsafe
+                        if (!sprite)
+                        {
+                            sprite = Manager.GetSprite(roleData, panel, 1);
+                            Console.WriteLine("TOSTVI DM ability 1 case scenario");
+                        }
+                        //Fail-Failsafe
+                        if (!sprite)
+                        {
+                            sprite = Manager.GetSprite(roleData, panel, 3);
+                        }
+                        //Fail-Fail-Failsafe
+                        if (!sprite)
+                        {
+                            Console.WriteLine("TOSTVIRI - No sprites found, using role");
+                            sprite = Manager.GetSprite(roleData, panel, 0);
                         }
                     }
-
-                    UIRoleData.UIRoleDataInstance roleData = null;
-                    Console.Write($"TOSTVI recieved message: player {teammatePosition + 1} (role {teammateRole}) has decided to ");
-                    if (isCancel)
+                }
+                if (hasNecronomicon)
+                {
+                    switch (ModSettings.GetString("Book Icon"))
                     {
-                        Console.WriteLine($"Cancel their night ability");
-                    }
-                    else if (isChangingTarget)
-                    {
-                        Console.WriteLine($"Change their target to {teammateTarget1}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Target {teammateTarget1}");
-                    }
-                    Console.WriteLine($"They {(hasNecronomicon ? "have" : "don't have")} the necronomicon!");
-                    if (panel == null)
-                    {
-                        panel = UnityEngine.Object.FindObjectOfType<RoleCardPanel>();
-                        Console.WriteLine("TOSTVI panel was null, a new one was grabbed");
-                    }
-                    if (panel != null)
-                    {
-                        roleData = panel.roleData.roleDataList.Find((UIRoleData.UIRoleDataInstance d) => d.role == teammateRole);
-                        if (roleData != null)
-                        {
-                            if (roleData.roleIcon != null)
+                        case "No Icon":
+                            //If their role's normal ability gets deleted with book, remove original sprite
+                            if (BookReplacesAbility.Contains(teammateRole))
                             {
-                                Console.WriteLine("TOSTVI all roledata grabed with success");
-                                if (isCancel)
+                                sprite = null;
+                            }
+                            break;
+                        default:
+                        case "Replace Icon":
+                            sprite = Service.Game.PlayerEffects.GetEffect(EffectType.NECRONOMICON).sprite;
+                            break;
+                        case "Add Icon":
+                            //If their role's normal ability gets deleted with book, replace first sprite anyway
+                            if (BookReplacesAbility.Contains(teammateRole))
+                            {
+                                sprite = Service.Game.PlayerEffects.GetEffect(EffectType.NECRONOMICON).sprite;
+                            }
+                            else
+                            {
+                                sprite2 = Service.Game.PlayerEffects.GetEffect(EffectType.NECRONOMICON).sprite;
+                            }
+                            break;
+                    }
+                }
+                if (ModSettings.GetBool("Role Revival Icon") && (teammateRole == Role.NECROMANCER || teammateRole == Role.RETRIBUTIONIST))
+                {
+                    if (menuChoiceType == MenuChoiceType.SpecialAbility)
+                    {
+                        //Add summon info to cache
+                        Console.WriteLine("TOSTVI adding summon target to cache");
+                        if(summonTargets.ContainsKey(teammatePosition))
+                        {
+                            summonTargets.Remove(teammatePosition);
+                        }
+                        summonTargets.Add(teammatePosition, teammateTarget1);
+                    }
+                    else if (menuChoiceType == MenuChoiceType.NightAbility2)
+                    {
+                        try
+                        {
+                            int summonTarget = summonTargets[teammatePosition];
+                            List<KillRecord> killRecords = (List<KillRecord>)Service.Game.Sim.simulation.killRecords;
+                            KillRecord killRecord = killRecords.Find((KillRecord k) => k.playerId == summonTarget);
+                            Role revivalRole = killRecord.playerRole;
+                            //Check if theres hidden info
+                            if (killRecord.hiddenPlayerRole != Role.NONE && killRecord.hiddenPlayerRole != Role.HIDDEN)
+                            {
+                                revivalRole = killRecord.hiddenPlayerRole;
+                            }
+                            Console.WriteLine("TOSTVIRI revived player role: " + revivalRole);
+                            //Check if is valid know role
+                            if (revivalRole != Role.NONE && revivalRole != Role.STONED && revivalRole != Role.HIDDEN)
+                            {
+                                UIRoleData.UIRoleDataInstance revivalRoleData = panel.roleData.roleDataList.Find((UIRoleData.UIRoleDataInstance d) => d.role == revivalRole);
+                                FactionType revivedFaction = killRecord.playerFaction;
+                                if (killRecord.hiddenPlayerFaction != FactionType.NONE && killRecord.hiddenPlayerFaction != FactionType.UNKNOWN)
                                 {
-                                    Manager.Instance.CancelTarget(menuChoiceType, teammateRole, teammatePosition);
-                                    if (menuChoiceType == MenuChoiceType.SpecialAbility && (teammateRole == Role.NECROMANCER || teammateRole == Role.RETRIBUTIONIST))
-                                    {
-                                        Manager.Instance.CancelTarget(MenuChoiceType.NightAbility2, teammateRole, teammatePosition);
-                                    }
+                                    revivedFaction = killRecord.hiddenPlayerFaction;
                                 }
-                                else
+                                if (revivedFaction == FactionType.UNKNOWN)
                                 {
-                                    Console.WriteLine("TOSTVI grabbing sprite");
-                                    //By default use role icon
-                                    Sprite sprite = Manager.GetSprite(roleData, panel, 0);
-                                    Sprite sprite2 = null;
-                                    //Apply ability icon in case option is enabled
-                                    if (ModSettings.GetString("Display Mode") == "No Icon")
-                                    {
-                                        sprite = null;
-                                    }
-                                    if (ModSettings.GetString("Display Mode") == "Ability Icon")
-                                    {
-                                        if (menuChoiceType == MenuChoiceType.NightAbility || ((teammateRole == Role.ILLUSIONIST || teammateRole == Role.JAILOR) && menuChoiceType == MenuChoiceType.NightAbility2))
-                                        {
-                                            sprite = Manager.GetSprite(roleData, panel, 1);
-                                        }
-                                        else if (menuChoiceType == MenuChoiceType.NightAbility2)
-                                        {
-                                            sprite = Manager.GetSprite(roleData, panel, 2);
-                                            //Failsafe
-                                            if (!sprite)
-                                            {
-                                                sprite = Manager.GetSprite(roleData, panel, 1);
-                                                Console.WriteLine("TOSTVI DM ability 1 case scenario");
-                                            }
-                                            //Fail-Failsafe
-                                            if (!sprite)
-                                            {
-                                                sprite = Manager.GetSprite(roleData, panel, 3);
-                                            }
-                                            //Fail-Fail-Failsafe
-                                            if (!sprite)
-                                            {
-                                                Console.WriteLine("TOSTVIRI - No sprites found, using role");
-                                                sprite = Manager.GetSprite(roleData, panel, 0);
-                                            }
-                                        }
-                                    }
-                                    if (hasNecronomicon)
-                                    {
-                                        switch (ModSettings.GetString("Book Icon"))
-                                        {
-                                            case "No Icon":
-                                                //If their role's normal ability gets deleted with book, remove original sprite
-                                                if (BookReplacesAbility.Contains(teammateRole))
-                                                {
-                                                    sprite = null;
-                                                }
-                                                break;
-                                            default:
-                                            case "Replace Icon":
-                                                sprite = Service.Game.PlayerEffects.GetEffect(EffectType.NECRONOMICON).sprite;
-                                                break;
-                                            case "Add Icon":
-                                                //If their role's normal ability gets deleted with book, replace first sprite anyway
-                                                if (BookReplacesAbility.Contains(teammateRole))
-                                                {
-                                                    sprite = Service.Game.PlayerEffects.GetEffect(EffectType.NECRONOMICON).sprite;
-                                                }
-                                                else
-                                                {
-                                                    sprite2 = Service.Game.PlayerEffects.GetEffect(EffectType.NECRONOMICON).sprite;
-                                                }
-                                                break;
-                                        }
-                                    }
-                                    if (ModSettings.GetBool("Role Revival Icon") && (teammateRole == Role.NECROMANCER || teammateRole == Role.RETRIBUTIONIST))
-                                    {
-                                        if (menuChoiceType == MenuChoiceType.SpecialAbility)
-                                        {
-                                            //Add summon info to cache
-                                            Console.WriteLine("TOSTVI adding summon target to cache");
-                                            if(summonTargets.ContainsKey(teammatePosition))
-                                            {
-                                                summonTargets.Remove(teammatePosition);
-                                            }
-                                            summonTargets.Add(teammatePosition, teammateTarget1);
-                                        }
-                                        else if (menuChoiceType == MenuChoiceType.NightAbility2)
-                                        {
-                                            try
-                                            {
-                                                int summonTarget = summonTargets[teammatePosition];
-                                                List<KillRecord> killRecords = (List<KillRecord>)Service.Game.Sim.simulation.killRecords;
-                                                KillRecord killRecord = killRecords.Find((KillRecord k) => k.playerId == summonTarget);
-                                                Role revivalRole = killRecord.playerRole;
-                                                //Check if theres hidden info
-                                                if (killRecord.hiddenPlayerRole != Role.NONE && killRecord.hiddenPlayerRole != Role.HIDDEN)
-                                                {
-                                                    revivalRole = killRecord.hiddenPlayerRole;
-                                                }
-                                                Console.WriteLine("TOSTVIRI revived player role: " + revivalRole);
-                                                //Check if is valid know role
-                                                if (revivalRole != Role.NONE && revivalRole != Role.STONED && revivalRole != Role.HIDDEN)
-                                                {
-                                                    UIRoleData.UIRoleDataInstance revivalRoleData = panel.roleData.roleDataList.Find((UIRoleData.UIRoleDataInstance d) => d.role == revivalRole);
-                                                    FactionType revivedFaction = killRecord.playerFaction;
-                                                    if (killRecord.hiddenPlayerFaction != FactionType.NONE && killRecord.hiddenPlayerFaction != FactionType.UNKNOWN)
-                                                    {
-                                                        revivedFaction = killRecord.hiddenPlayerFaction;
-                                                    }
-                                                    if (revivedFaction == FactionType.UNKNOWN)
-                                                    {
-                                                        Console.WriteLine("TOSTVIRI revived player faction is stoned or hidden, setting to none");
-                                                        revivedFaction = FactionType.NONE;
-                                                    }
-                                                    Console.WriteLine("TOSTVIRI revived player faction: " + revivedFaction);
-                                                    sprite = Manager.GetSprite(revivalRoleData, revivedFaction, 0);
-                                                }
-                                                else
-                                                {
-                                                    //If unable to get icon of the role been revived, put ability 2 icon
-                                                    Console.WriteLine("TOSTVIRI invalid revival role");
-                                                    sprite = Manager.GetSprite(roleData, panel, 2);
-                                                }
-                                            }
-                                            catch (KeyNotFoundException)
-                                            {
-                                                Console.WriteLine("TOSTVIRI summon info not found");
-                                                sprite = Manager.GetSprite(roleData, panel, 2);
-                                            }
-                                        }
-                                    }
-                                    //Add 2nd ability icon no matter the option selected to avoid duplicated icons
-                                    else if ((teammateRole == Role.WITCH || teammateRole == Role.NECROMANCER || teammateRole == Role.RETRIBUTIONIST || teammateRole == Role.POISONER) && menuChoiceType == MenuChoiceType.NightAbility2)
-                                    {
-                                        Console.WriteLine("TOSTVI ability 2 case scenario");
-                                        sprite = Manager.GetSprite(roleData, panel, 2);
-                                    }
-                                    //Always apply ability icon when it comes to special abilities
-                                    if (menuChoiceType == MenuChoiceType.SpecialAbility)
-                                    {
-                                        Console.WriteLine("TOSTVI special ability case scenario");
-                                        sprite = Manager.GetSprite(roleData, panel, 3);
-                                    }
-                                    Console.WriteLine("TOSTVI starting the request");
-                                    switch (menuChoiceType)
-                                    {
-                                        case MenuChoiceType.NightAbility:
-                                            if (sprite)
-                                            {
-                                                Manager.Instance.ChangeTarget(MenuChoiceType.NightAbility, teammateTarget1, sprite, teammateRole, teammatePosition);
-                                            }
-                                            if (!sprite && sprite2)
-                                            {
-                                                Manager.Instance.ChangeTarget(MenuChoiceType.NightAbility, teammateTarget1, sprite2, teammateRole, teammatePosition);
-                                            }
-                                            else if (sprite2)
-                                            {
-                                                Manager.Instance.AddTarget(MenuChoiceType.NightAbility, teammateTarget1, sprite2, teammateRole, teammatePosition);
-                                            }
-                                            break;
-                                        case MenuChoiceType.NightAbility2:
-                                            if (!sprite) break;
-                                            Manager.Instance.ChangeTarget(MenuChoiceType.NightAbility2, teammateTarget2, sprite, teammateRole, teammatePosition);
-                                            break;
-                                        case MenuChoiceType.SpecialAbility:
-                                            if (!sprite) break;
-                                            //If special ability with no targets, just put it on themselves
-                                            int teammateTargetingPosition = teammatePosition;
-                                            if (teammateTarget1 != -1)
-                                            {
-                                                teammateTargetingPosition = teammateTarget1;
-                                            }
-                                            if (teammateTarget2 != -1)
-                                            {
-                                                teammateTargetingPosition = teammateTarget2;
-                                            }
-                                            //Will add oracle icon to all known aegis targets
-                                            if (teammateTargetingPosition == teammatePosition && (teammateTargetRole != Role.NONE) && ModSettings.GetString("Special Ability Icon") != "No Icon")
-                                            {
-                                                Manager.Instance.CancelTarget(MenuChoiceType.SpecialAbility, teammateRole, teammatePosition);
-                                                foreach (TosAbilityPanelListItem player in Manager.Instance.Panel.playerListPlayers)
-                                                {
-                                                    if (player.playerRole == teammateTargetRole)
-                                                    {
-                                                        Manager.Instance.AddTarget(MenuChoiceType.SpecialAbility, player.characterPosition, sprite, teammateRole, teammatePosition);
-                                                    }
-                                                }
-                                                return;
-                                            }
-                                            switch (ModSettings.GetString("Special Ability Icon"))
-                                            {
-                                                case "No Icon":
-                                                    break;
-                                                case "Replace Icon":
-                                                    Manager.Instance.CancelTarget(MenuChoiceType.NightAbility2, teammateRole, teammatePosition);
-                                                    Manager.Instance.ChangeTarget(MenuChoiceType.NightAbility, teammateTargetingPosition, sprite, teammateRole, teammatePosition);
-                                                    break;
-                                                default:
-                                                case "Add Icon":
-                                                    Manager.Instance.ChangeTarget(MenuChoiceType.SpecialAbility, teammateTargetingPosition, sprite, teammateRole, teammatePosition);
-                                                    break;
-                                            }
-                                            break;
-                                    }
+                                    Console.WriteLine("TOSTVIRI revived player faction is stoned or hidden, setting to none");
+                                    revivedFaction = FactionType.NONE;
                                 }
+                                Console.WriteLine("TOSTVIRI revived player faction: " + revivedFaction);
+                                sprite = Manager.GetSprite(revivalRoleData, revivedFaction, 0);
+                            }
+                            else
+                            {
+                                //If unable to get icon of the role been revived, put ability 2 icon
+                                Console.WriteLine("TOSTVIRI invalid revival role");
+                                sprite = Manager.GetSprite(roleData, panel, 2);
                             }
                         }
-                    }
-                    else
-                    {
-                        Console.WriteLine("TOSTVI There was no panel");
+                        catch (KeyNotFoundException)
+                        {
+                            Console.WriteLine("TOSTVIRI summon info not found");
+                            sprite = Manager.GetSprite(roleData, panel, 2);
+                        }
                     }
                 }
-                catch (Exception e)
+                //Add 2nd ability icon no matter the option selected to avoid duplicated icons
+                else if ((teammateRole == Role.WITCH || teammateRole == Role.NECROMANCER || teammateRole == Role.RETRIBUTIONIST || teammateRole == Role.POISONER) && menuChoiceType == MenuChoiceType.NightAbility2)
                 {
-                    Console.WriteLine("TOSTVI Error! " + e.Message);
+                    Console.WriteLine("TOSTVI ability 2 case scenario");
+                    sprite = Manager.GetSprite(roleData, panel, 2);
                 }
+                //Always apply ability icon when it comes to special abilities
+                if (menuChoiceType == MenuChoiceType.SpecialAbility)
+                {
+                    Console.WriteLine("TOSTVI special ability case scenario");
+                    sprite = Manager.GetSprite(roleData, panel, 3);
+                }
+                Console.WriteLine("TOSTVI starting the request");
+                switch (menuChoiceType)
+                {
+                    case MenuChoiceType.NightAbility:
+                        if (sprite)
+                        {
+                            Manager.Instance.ChangeTarget(MenuChoiceType.NightAbility, teammateTarget1, sprite, teammateRole, teammatePosition);
+                        }
+                        if (!sprite && sprite2)
+                        {
+                            Manager.Instance.ChangeTarget(MenuChoiceType.NightAbility, teammateTarget1, sprite2, teammateRole, teammatePosition);
+                        }
+                        else if (sprite2)
+                        {
+                            Manager.Instance.AddTarget(MenuChoiceType.NightAbility, teammateTarget1, sprite2, teammateRole, teammatePosition);
+                        }
+                        break;
+                    case MenuChoiceType.NightAbility2:
+                        if (!sprite) break;
+                        Manager.Instance.ChangeTarget(MenuChoiceType.NightAbility2, teammateTarget2, sprite, teammateRole, teammatePosition);
+                        break;
+                    case MenuChoiceType.SpecialAbility:
+                        if (!sprite) break;
+                        //If special ability with no targets, just put it on themselves
+                        int teammateTargetingPosition = teammatePosition;
+                        if (teammateTarget1 != -1)
+                        {
+                            teammateTargetingPosition = teammateTarget1;
+                        }
+                        if (teammateTarget2 != -1)
+                        {
+                            teammateTargetingPosition = teammateTarget2;
+                        }
+                        //Will add oracle icon to all known aegis targets
+                        if (teammateTargetingPosition == teammatePosition && (teammateTargetRole != Role.NONE) && ModSettings.GetString("Special Ability Icon") != "No Icon")
+                        {
+                            Manager.Instance.CancelTarget(MenuChoiceType.SpecialAbility, teammateRole, teammatePosition);
+                            foreach (TosAbilityPanelListItem player in Manager.Instance.Panel.playerListPlayers)
+                            {
+                                if (player.playerRole == teammateTargetRole)
+                                {
+                                    Manager.Instance.AddTarget(MenuChoiceType.SpecialAbility, player.characterPosition, sprite, teammateRole, teammatePosition);
+                                }
+                            }
+                            return;
+                        }
+                        switch (ModSettings.GetString("Special Ability Icon"))
+                        {
+                            case "No Icon":
+                                break;
+                            case "Replace Icon":
+                                Manager.Instance.CancelTarget(MenuChoiceType.NightAbility2, teammateRole, teammatePosition);
+                                Manager.Instance.ChangeTarget(MenuChoiceType.NightAbility, teammateTargetingPosition, sprite, teammateRole, teammatePosition);
+                                break;
+                            default:
+                            case "Add Icon":
+                                Manager.Instance.ChangeTarget(MenuChoiceType.SpecialAbility, teammateTargetingPosition, sprite, teammateRole, teammatePosition);
+                                break;
+                        }
+                        break;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("TOSTVI Error! " + e.Message);
             }
         }
     }
