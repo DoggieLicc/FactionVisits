@@ -22,7 +22,7 @@ namespace TOSTeamVisitsIcons
                 DictionaryExtensions.SetValue(Settings.SettingsCache, "Book Icon", ModSettings.GetBool("Book Icon", "pokegustavo.FactionVisits"));
                 DictionaryExtensions.SetValue(Settings.SettingsCache, "Special Ability Icon", ModSettings.GetBool("Special Ability Icon", "pokegustavo.FactionVisits"));
                 DictionaryExtensions.SetValue(Settings.SettingsCache, "Show Own Actions", ModSettings.GetBool("Show Own Actions", "pokegustavo.FactionVisits"));
-                DictionaryExtensions.SetValue(Settings.SettingsCache, "Handle Overcharged", ModSettings.GetBool("Handle Overcharged", "pokegustavo.FactionVisits"));
+                DictionaryExtensions.SetValue(Settings.SettingsCache, "Handle Overcharged", ModSettings.GetString("Handle Overcharged", "pokegustavo.FactionVisits"));
             }
             catch (Exception ex)
             {
@@ -71,7 +71,7 @@ namespace TOSTeamVisitsIcons
             },
             {
                 "Handle Overcharged",
-                false
+                "Only Myself"
             }
         };
 
@@ -129,6 +129,26 @@ namespace TOSTeamVisitsIcons
                     OnChanged = delegate (string s)
                     {
                         DictionaryExtensions.SetValue(SettingsCache, "Special Ability Icon", s);
+                    }
+                };
+                return dropdownSetting;
+            }
+        }
+
+        public ModSettings.DropdownSetting HandleOvercharged 
+        {
+            get
+            {
+                ModSettings.DropdownSetting dropdownSetting = new ModSettings.DropdownSetting
+                {
+                    Name = "Handle Overcharged",
+                    Description = "Dictates whether the mod should handle overcharged abilities for you, all teammates, or be disabled.\n\nNOTE: Handling all teammate's overcharges is experimental, as there's no 100% way to tell if a teammate's overcharged.",
+                    Options = HandleOverchargedSettings,
+                    AvailableInGame = false,
+                    Available = true,
+                    OnChanged = delegate (string s)
+                    {
+                        DictionaryExtensions.SetValue(SettingsCache, "Handle Overcharged", s);
                     }
                 };
                 return dropdownSetting;
@@ -198,27 +218,6 @@ namespace TOSTeamVisitsIcons
             }
         }
 
-        public ModSettings.CheckboxSetting HandleOvercharged 
-        {
-            get 
-            {
-                ModSettings.CheckboxSetting checkboxSetting = new ModSettings.CheckboxSetting 
-                {
-                    Name = "Handle Overcharged",
-                    Description = "If enabled, the mod will try to handle overcharged teammate's properly. \n\nExperimental! There's a chance it thinks someone's overcharged when they aren't, due to tos2 sending false info sometimes",
-                    DefaultValue = false,
-                    AvailableInGame = false,
-                    Available = true,
-                    OnChanged = delegate (bool b)
-                    {
-                        DictionaryExtensions.SetValue(SettingsCache, "Handle Overcharged", b);
-                    }
-                };
-                return checkboxSetting;
-
-            }
-        }
-
         private readonly List<string> DisplaySettings = new List<string>(3)
         {
             "Role Icon",
@@ -245,6 +244,13 @@ namespace TOSTeamVisitsIcons
             "Never",
             "Only as Factional Evil",
             "Always"
+        };
+
+        private readonly List<string> HandleOverchargedSettings = new List<string>(3)
+        {
+            "Only Myself",
+            "All Teammates (EXPERIMENTAL)",
+            "Never"
         };
     }
 }

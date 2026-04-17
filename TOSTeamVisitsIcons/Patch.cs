@@ -57,6 +57,7 @@ namespace TOSTeamVisitsIcons
                 bool isChangingTarget;
                 bool isCancel;
                 MenuChoiceType menuChoiceType;
+                bool isMe = false;
 
                 if (chatLogMessage.chatLogEntry is ChatLogFactionTargetSelectionFeedbackEntry)
                 {
@@ -101,6 +102,7 @@ namespace TOSTeamVisitsIcons
                     isChangingTarget = data.bIsChangingTarget;
                     isCancel = data.bIsCancel;
                     menuChoiceType = data.menuChoiceType;
+                    isMe = true;
                 }
 
                 float remainingTime = (float)(Service.Game.Sim.simulation.playPhaseState.Data.playPhaseTime - DateTime.UtcNow).TotalSeconds;
@@ -112,7 +114,11 @@ namespace TOSTeamVisitsIcons
                     int tgcS = Manager.Instance.TargetsCount(MenuChoiceType.SpecialAbility, teammateRole, teammatePosition);
                     bool isToggleableSpecialAbiility = (menuChoiceType == MenuChoiceType.SpecialAbility && (teammateRole == Role.SHROUD || teammateRole == Role.SERIALKILLER || teammateRole == Role.ENCHANTER || teammateRole == Role.VOODOOMASTER));
                     bool isSecondChoiceAbility = (menuChoiceType == MenuChoiceType.NightAbility2 && (teammateRole == Role.RETRIBUTIONIST || teammateRole == Role.NECROMANCER || teammateRole == Role.SEER || teammateRole == Role.WITCH || teammateRole == Role.WAR));
-                    if ((tgc1 + tgc2 + tgcS) != 0 && !isToggleableSpecialAbiility && !isSecondChoiceAbility)
+                    bool onlyMe = ModSettings.GetString("Handle Overcharged") == "Only Myself";
+                    bool amIOvercharged = Service.Game.Sim.info.roleAlteringEffectsObservation.Data.bIsOvercharged;
+                    bool dontHandleOthers = onlyMe && !isMe;
+                    bool fakeOvercharged = isMe && !amIOvercharged;
+                    if ((tgc1 + tgc2 + tgcS) != 0 && !isToggleableSpecialAbiility && !isSecondChoiceAbility && !dontHandleOthers && !fakeOvercharged)
                     {
                         Console.WriteLine("TOSTVI - Setting " + teammatePosition + " as overcharged teammate");
                         Manager.Instance.overchargedTeammate = teammatePosition;
@@ -493,7 +499,7 @@ namespace TOSTeamVisitsIcons
         }
         internal bool canOverchargeHappen()
         {
-            if (!ModSettings.GetBool("Handle Overcharged")) return false;
+            if (ModSettings.GetString("Handle Overcharged") == "Never") return false;
             List<Role> modifiers = Service.Game.Sim.simulation.roleDeckBuilder.Data.modifierCards;
             if (modifiers.Contains(Role.ALL_OUTLIERS)) return true;
             List<RoleDeckSlot> roleDeckSlots = Service.Game.Sim.simulation.roleDeckBuilder.Data.roleDeckSlots;
