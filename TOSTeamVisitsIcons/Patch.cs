@@ -105,9 +105,14 @@ namespace TOSTeamVisitsIcons
                     isMe = true;
                 }
 
+                // Don't handle unsupported choice types
+                if (!(menuChoiceType == MenuChoiceType.NightAbility || menuChoiceType == MenuChoiceType.NightAbility2 || menuChoiceType == MenuChoiceType.SpecialAbility)) return;
+
                 float remainingTime = (float)(Service.Game.Sim.simulation.playPhaseState.Data.playPhaseTime - DateTime.UtcNow).TotalSeconds;
+                int dayNightNumber = Service.Game.Sim.info.daytime.Data.daynightNumber;
                 Console.WriteLine("TOSTVI - Remaining time: " + remainingTime);
-                if (Service.Game.Sim.info.gameInfo.Data.playPhase == PlayPhase.NIGHT && !isCancel && !isChangingTarget && remainingTime <= 19f && Manager.Instance.handleOvercharged && Manager.Instance.overchargedTeammate == -1)
+                Console.WriteLine("TOSTVI - Current Day/Night number: " + dayNightNumber);
+                if (dayNightNumber > 1 && Service.Game.Sim.info.gameInfo.Data.playPhase == PlayPhase.NIGHT && !isCancel && !isChangingTarget && remainingTime <= 19f && Manager.Instance.handleOvercharged && Manager.Instance.overchargedTeammate == -1)
                 {
                     int tgc1 = Manager.Instance.TargetsCount(MenuChoiceType.NightAbility, teammateRole, teammatePosition);
                     int tgc2 = Manager.Instance.TargetsCount(MenuChoiceType.NightAbility2, teammateRole, teammatePosition);
@@ -216,7 +221,7 @@ namespace TOSTeamVisitsIcons
                     {
                         case "No Icon":
                             //If their role's normal ability gets deleted with book, remove original sprite
-                            if (BookReplacesAbility.Contains(teammateRole))
+                            if (BookReplacesAbility.Contains(teammateRole) && ModSettings.GetString("Display Mode") == "Ability Icon")
                             {
                                 sprite = null;
                             }
@@ -227,7 +232,7 @@ namespace TOSTeamVisitsIcons
                             break;
                         case "Add Icon":
                             //If their role's normal ability gets deleted with book, replace first sprite anyway
-                            if (BookReplacesAbility.Contains(teammateRole))
+                            if (BookReplacesAbility.Contains(teammateRole) && ModSettings.GetString("Display Mode") == "Ability Icon")
                             {
                                 sprite = Service.Game.PlayerEffects.GetEffect(EffectType.NECRONOMICON).sprite;
                             }
