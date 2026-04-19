@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="modinfo.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="modinfo.json" />
+    <None Remove="resources.images.thumbnail.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="resources.images.thumbnail.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>Sources/Assembly-CSharp.dll</HintPath>
+    </Reference>
+        
+    <Reference Include="0Harmony">
+      <HintPath>Sources/0Harmony.dll</HintPath>
+    </Reference>
+
+    <Reference Include="SalemModLoader">
+      <HintPath>Sources/SalemModLoader.dll</HintPath>
+    </Reference>
+
+    <Reference Include="UnityEngine.UI">
+      <HintPath>Sources/UnityEngine.UI.dll</HintPath>
+    </Reference>
+
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>Sources/UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+
+  </ItemGroup>
+
+</Project>

@@ -1,6 +1,8 @@
-# TOS Team Visit Icons
+# FactionVisits
 
-This mod adds visual icons to help you coordinate where your teammates are going to visit that night
+This mod adds visual icons to help you coordinate who your teammates are going to target
+
+Fork of [TOSTeamVisitsIcons](https://github.com/pokegustavor/TOSTeamVisitsIcons) by pokegustavor
 
 ## Features
 

@@ -26,7 +26,7 @@ namespace FactionVisits
             }
             catch (Exception ex)
             {
-                Console.WriteLine("TOSTVI The rainbow faction crashed the mod. Contact pokegustavo. Error: " + ex.Message);
+                Console.WriteLine("FactionVisits The rainbow faction crashed the mod. Contact pokegustavo. Error: " + ex.Message);
             }
             try 
             {
@@ -34,7 +34,7 @@ namespace FactionVisits
             }
             catch 
             {
-                Console.WriteLine("TOSTVI Fancy UI was not found.");
+                Console.WriteLine("FactionVisits Fancy UI was not found.");
             }
         }
     }

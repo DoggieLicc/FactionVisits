@@ -121,8 +121,8 @@ namespace FactionVisits
                 float remainingTime = (float)(Service.Game.Sim.simulation.playPhaseState.Data.playPhaseTime - DateTime.UtcNow).TotalSeconds;
                 int dayNightNumber = Service.Game.Sim.info.daytime.Data.daynightNumber;
                 float secondHalfTime = Interpreter.isRapidMode ? 10f : 19f;
-                Console.WriteLine("TOSTVI - Remaining time: " + remainingTime);
-                Console.WriteLine("TOSTVI - Current Day/Night number: " + dayNightNumber);
+                Console.WriteLine("FactionVisits - Remaining time: " + remainingTime);
+                Console.WriteLine("FactionVisits - Current Day/Night number: " + dayNightNumber);
                 if (dayNightNumber > 1 && Service.Game.Sim.info.gameInfo.Data.playPhase == PlayPhase.NIGHT && !isCancel && !isChangingTarget && remainingTime <= secondHalfTime && Manager.Instance.handleOvercharged && Manager.Instance.overchargedTeammate == -1)
                 {
                     int tgc1 = Manager.Instance.TargetsCount(MenuChoiceType.NightAbility, teammateRole, teammatePosition);
@@ -136,7 +136,7 @@ namespace FactionVisits
                     bool fakeOvercharged = isMe && !amIOvercharged;
                     if ((tgc1 + tgc2 + tgcS) != 0 && !isToggleableSpecialAbiility && !isSecondChoiceAbility && !dontHandleOthers && !fakeOvercharged)
                     {
-                        Console.WriteLine("TOSTVI - Setting " + teammatePosition + " as overcharged teammate");
+                        Console.WriteLine("FactionVisits - Setting " + teammatePosition + " as overcharged teammate");
                         Manager.Instance.overchargedTeammate = teammatePosition;
                     }
                 }
@@ -151,7 +151,7 @@ namespace FactionVisits
                 }
 
                 UIRoleData.UIRoleDataInstance roleData = null;
-                Console.Write($"TOSTVI recieved message: player {teammatePosition + 1} (role {teammateRole}) has decided to ");
+                Console.Write($"FactionVisits recieved message: player {teammatePosition + 1} (role {teammateRole}) has decided to ");
                 if (isCancel)
                 {
                     Console.WriteLine($"Cancel their night ability");
@@ -168,18 +168,18 @@ namespace FactionVisits
                 if (panel == null)
                 {
                     panel = UnityEngine.Object.FindObjectOfType<RoleCardPanel>();
-                    Console.WriteLine("TOSTVI panel was null, a new one was grabbed");
+                    Console.WriteLine("FactionVisits panel was null, a new one was grabbed");
                 }
                 if (panel == null)
                 {
-                    Console.WriteLine("TOSTVI There was no panel");
+                    Console.WriteLine("FactionVisits There was no panel");
                     return;
                 }
                 roleData = panel.roleData.roleDataList.Find((UIRoleData.UIRoleDataInstance d) => d.role == teammateRole);
 
                 if (roleData == null || roleData.roleIcon == null) return;
 
-                Console.WriteLine("TOSTVI all roledata grabed with success");
+                Console.WriteLine("FactionVisits all roledata grabed with success");
                 if (isCancel)
                 {
                     Manager.Instance.CancelTarget(menuChoiceType, teammateRole, teammatePosition);
@@ -189,7 +189,7 @@ namespace FactionVisits
                     }
                     return;
                 }
-                Console.WriteLine("TOSTVI grabbing sprite");
+                Console.WriteLine("FactionVisits grabbing sprite");
                 //By default use role icon
                 Sprite sprite = Manager.GetSprite(roleData, panel, 0);
                 Sprite sprite2 = null;
@@ -211,7 +211,7 @@ namespace FactionVisits
                         if (!sprite)
                         {
                             sprite = Manager.GetSprite(roleData, panel, 1);
-                            Console.WriteLine("TOSTVI DM ability 1 case scenario");
+                            Console.WriteLine("FactionVisits DM ability 1 case scenario");
                         }
                         //Fail-Failsafe
                         if (!sprite)
@@ -221,7 +221,7 @@ namespace FactionVisits
                         //Fail-Fail-Failsafe
                         if (!sprite)
                         {
-                            Console.WriteLine("TOSTVIRI - No sprites found, using role");
+                            Console.WriteLine("FactionVisits - No sprites found, using role");
                             sprite = Manager.GetSprite(roleData, panel, 0);
                         }
                     }
@@ -259,7 +259,7 @@ namespace FactionVisits
                     if (menuChoiceType == MenuChoiceType.SpecialAbility)
                     {
                         //Add summon info to cache
-                        Console.WriteLine("TOSTVI adding summon target to cache");
+                        Console.WriteLine("FactionVisits adding summon target to cache");
                         if(summonTargets.ContainsKey(teammatePosition))
                         {
                             summonTargets.Remove(teammatePosition);
@@ -279,7 +279,7 @@ namespace FactionVisits
                             {
                                 revivalRole = killRecord.hiddenPlayerRole;
                             }
-                            Console.WriteLine("TOSTVIRI revived player role: " + revivalRole);
+                            Console.WriteLine("FactionVisits revived player role: " + revivalRole);
                             //Check if is valid know role
                             if (revivalRole != Role.NONE && revivalRole != Role.STONED && revivalRole != Role.HIDDEN)
                             {
@@ -291,22 +291,22 @@ namespace FactionVisits
                                 }
                                 if (revivedFaction == FactionType.UNKNOWN)
                                 {
-                                    Console.WriteLine("TOSTVIRI revived player faction is stoned or hidden, setting to none");
+                                    Console.WriteLine("FactionVisits revived player faction is stoned or hidden, setting to none");
                                     revivedFaction = FactionType.NONE;
                                 }
-                                Console.WriteLine("TOSTVIRI revived player faction: " + revivedFaction);
+                                Console.WriteLine("FactionVisits revived player faction: " + revivedFaction);
                                 sprite = Manager.GetSprite(revivalRoleData, revivedFaction, 0);
                             }
                             else
                             {
                                 //If unable to get icon of the role been revived, put ability 2 icon
-                                Console.WriteLine("TOSTVIRI invalid revival role");
+                                Console.WriteLine("FactionVisits invalid revival role");
                                 sprite = Manager.GetSprite(roleData, panel, 2);
                             }
                         }
                         catch (KeyNotFoundException)
                         {
-                            Console.WriteLine("TOSTVIRI summon info not found");
+                            Console.WriteLine("FactionVisits summon info not found");
                             sprite = Manager.GetSprite(roleData, panel, 2);
                         }
                     }
@@ -314,16 +314,16 @@ namespace FactionVisits
                 //Add 2nd ability icon no matter the option selected to avoid duplicated icons
                 else if ((teammateRole == Role.WITCH || teammateRole == Role.NECROMANCER || teammateRole == Role.RETRIBUTIONIST || teammateRole == Role.POISONER) && menuChoiceType == MenuChoiceType.NightAbility2)
                 {
-                    Console.WriteLine("TOSTVI ability 2 case scenario");
+                    Console.WriteLine("FactionVisits ability 2 case scenario");
                     sprite = Manager.GetSprite(roleData, panel, 2);
                 }
                 //Always apply ability icon when it comes to special abilities
                 if (menuChoiceType == MenuChoiceType.SpecialAbility)
                 {
-                    Console.WriteLine("TOSTVI special ability case scenario");
+                    Console.WriteLine("FactionVisits special ability case scenario");
                     sprite = Manager.GetSprite(roleData, panel, 3);
                 }
-                Console.WriteLine("TOSTVI starting the request");
+                Console.WriteLine("FactionVisits starting the request");
                 switch (menuChoiceType)
                 {
                     case MenuChoiceType.NightAbility:
@@ -409,7 +409,7 @@ namespace FactionVisits
             }
             catch (Exception e)
             {
-                Console.WriteLine("TOSTVI Error! " + e.Message);
+                Console.WriteLine("FactionVisits Error! " + e.Message);
             }
         }
     }
@@ -427,13 +427,13 @@ namespace FactionVisits
             if (gameInfoObservation.Data.gamePhase == GamePhase.PLAY && !hooked)
             {
                 hooked = true;
-                Console.WriteLine("TOSTVI adding hook");
+                Console.WriteLine("FactionVisits adding hook");
                 Service.Game.Sim.simulation.incomingChatLogMessage.OnChanged += Interpreter.HandleMessages;
             }
             else if (gameInfoObservation.Data.gamePhase != GamePhase.PLAY && hooked)
             {
                 hooked = false;
-                Console.WriteLine("TOSTVI removing hook");
+                Console.WriteLine("FactionVisits removing hook");
                 Service.Game.Sim.simulation.incomingChatLogMessage.OnChanged -= Interpreter.HandleMessages;
             }
             // Clear Day Icons as we enter Night Phase
@@ -442,7 +442,7 @@ namespace FactionVisits
                 // tos2 retriggers this if someone dcs at night, make sure to not clear our night icons
                 if (!clearedDayIcons)
                 {
-                    Console.WriteLine($"TOSTVI Requesting icons clear because of playphase: " + gameInfoObservation.Data.playPhase);
+                    Console.WriteLine($"FactionVisits Requesting icons clear because of playphase: " + gameInfoObservation.Data.playPhase);
                     Manager.Instance.Clear();
                     clearedDayIcons = true;
                 }
@@ -454,7 +454,7 @@ namespace FactionVisits
                 //just in case
                 if (!clearedNightIcons)
                 {
-                    Console.WriteLine($"TOSTVI Requesting icons clear because of playphase: " + gameInfoObservation.Data.playPhase);
+                    Console.WriteLine($"FactionVisits Requesting icons clear because of playphase: " + gameInfoObservation.Data.playPhase);
                     Manager.Instance.Clear();
                     clearedNightIcons = true;
                 }
@@ -464,7 +464,7 @@ namespace FactionVisits
             if (gameInfoObservation.Data.gamePhase == GamePhase.PLAY && gameInfoObservation.Data.playPhase == PlayPhase.FIRST_DISCUSSION)
             {
                 Manager.Instance.setHandleOvercharged();
-                Console.WriteLine("TOSTVI do we handle overcharges?: " + Manager.Instance.handleOvercharged);
+                Console.WriteLine("FactionVisits do we handle overcharges?: " + Manager.Instance.handleOvercharged);
                 Interpreter.isRapidMode = false;
             }
         }
@@ -555,7 +555,7 @@ namespace FactionVisits
             {
                 image.transform.SetParent(tagetPlayerPanel.playerNameButton.transform);
             }
-            Console.WriteLine("TOSTVI adding icon " + image.name);
+            Console.WriteLine("FactionVisits adding icon " + image.name);
             image.transform.localScale = Vector3.one;
             image.sprite = sprite;
             visits[targetPlayer].Add(image);
@@ -578,7 +578,7 @@ namespace FactionVisits
             {
                 roleName += "C";
             }
-            Console.WriteLine("TOSTVID count target: " + roleName);
+            Console.WriteLine("FactionVisits count target: " + roleName);
             foreach (List<Image> imgs in visits.Values)
             {
                 for (int i = 0; i < imgs.Count; i++)
@@ -608,7 +608,7 @@ namespace FactionVisits
             {
                 roleName += "C";
             }
-            Console.WriteLine("TOSTVID removal target: " + roleName);
+            Console.WriteLine("FactionVisits removal target: " + roleName);
             foreach (List<Image> imgs in visits.Values)
             {
                 for (int i = 0; i < imgs.Count; i++)
@@ -616,7 +616,7 @@ namespace FactionVisits
                     if (imgs[i].gameObject.name == roleName)
                     {
                         Image temp = imgs[i];
-                        Console.WriteLine("TOSTVI removing " + temp.gameObject.name + " because of target change or cancel");
+                        Console.WriteLine("FactionVisits removing " + temp.gameObject.name + " because of target change or cancel");
                         imgs.RemoveAt(i);
                         UnityEngine.Object.DestroyImmediate(temp);
                         removed = true;
@@ -636,7 +636,7 @@ namespace FactionVisits
         internal void ChangeTarget(MenuChoiceType abilityId, int targetPlayer, Sprite sprite, Role role, int actorPlayer)
         {
             //First removes all relevant sprites, then adds any relevant sprites to the list
-            Console.WriteLine("TOSTVI requesting cancels for the change of target");
+            Console.WriteLine("FactionVisits requesting cancels for the change of target");
             switch (role)
             {
                 case Role.BODYGUARD:
@@ -688,7 +688,7 @@ namespace FactionVisits
                     CancelTarget(abilityId, role, actorPlayer);
                     break;
             }
-            Console.WriteLine("TOSTVI adding icon to new target");
+            Console.WriteLine("FactionVisits adding icon to new target");
             AddTarget(abilityId, targetPlayer, sprite, role, actorPlayer);
         }
         internal void Clear()
