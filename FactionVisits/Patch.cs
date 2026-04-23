@@ -784,7 +784,6 @@ namespace FactionVisits
                 case (Role)59: //Inquisitor in BTOS2, Catalyst in Vanilla
                 case (Role)62: //Warlock in BTOS2
                 case (Role)65: //Socialite in BTOS2
-                case Role.SERIALKILLER:
                 case Role.JAILOR:
                 case Role.SOCIALITE:
                 case Role.MONARCH:
@@ -836,6 +835,12 @@ namespace FactionVisits
                     {
                         CancelTarget(abilityId, role, actorPlayer);
                     }
+                    break;
+                case Role.SERIALKILLER:
+                case Role.SHROUD:
+                    if (abilityId == MenuChoiceType.SpecialAbility) return;
+                    CancelTarget(MenuChoiceType.NightAbility, role, actorPlayer);
+                    CancelTarget(MenuChoiceType.NightAbility2, role, actorPlayer);
                     break;
                 default:
                     CancelTarget(abilityId, role, actorPlayer);
