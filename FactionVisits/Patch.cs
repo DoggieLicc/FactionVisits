@@ -74,6 +74,13 @@ namespace FactionVisits
             (Role)64, //BTOS2 Cultist
             (Role)65  //BTOS2 Socialite
         };
+        public static void Reset()
+        {
+            Interpreter.panel = null;
+            Interpreter.isRapidMode = false;
+            Interpreter.summonTargets = new Dictionary<int, int>();
+            Interpreter.tSpecialAbiilityData = new Dictionary<int, bool>();
+        }
         internal static void HandleMessages(ChatLogMessage chatLogMessage)
         {
             if (chatLogMessage.chatLogEntry is ChatLogGameMessageEntry)
@@ -553,13 +560,10 @@ namespace FactionVisits
             }
             if (gameInfoObservation.Data.gamePhase == GamePhase.PLAY && gameInfoObservation.Data.playPhase == PlayPhase.FIRST_DISCUSSION)
             {
+                Manager.Instance.Reset();
                 Manager.Instance.setHandleOvercharged();
-                Interpreter.summonTargets.Clear();
-                Manager.Instance.overchargedTeammate = -1;
-                Manager.Instance.amIRecruited = false;
-                Interpreter.panel = null;
+                Interpreter.Reset();
                 Console.WriteLine("FactionVisits do we handle overcharges?: " + Manager.Instance.handleOvercharged);
-                Interpreter.isRapidMode = false;
                 Console.WriteLine("FactionVisits are we modded?: " + Manager.isModded());
                 if (Manager.isModded())
                 {
@@ -614,6 +618,14 @@ namespace FactionVisits
                 return _panel;
             }
         }
+        internal void Reset()
+        {
+            handleOvercharged = false;
+            overchargedTeammate = -1;
+            amIRecruited = false;
+            _panel = null;
+            visits = new Dictionary<int, List<Image>>();
+        }
         internal bool canOverchargeHappen()
         {
             if (ModSettings.GetString("Handle Overcharged") == "Never") return false;
@@ -655,24 +667,34 @@ namespace FactionVisits
             {
                 targetName += "C";
             }
-            Image image = UnityEngine.Object.Instantiate(Panel.playerListPlayers[targetPlayer].effectImage2);
-            image.gameObject.name = targetName;
-            image.name = targetName;
-            if (Panel.playerListPlayers[targetPlayer].roleIconButton.isActiveAndEnabled)
+            try
             {
-                image.transform.SetParent(tagetPlayerPanel.roleIconButton.transform);
-            }
-            else
+                Image image = UnityEngine.Object.Instantiate(Panel.playerListPlayers[targetPlayer].effectImage2);
+                image.gameObject.name = targetName;
+                image.name = targetName;
+                if (Panel.playerListPlayers[targetPlayer].roleIconButton.isActiveAndEnabled)
+                {
+                    image.transform.SetParent(tagetPlayerPanel.roleIconButton.transform);
+                }
+                else
+                {
+                    image.transform.SetParent(tagetPlayerPanel.playerNameButton.transform);
+                }
+                Console.WriteLine("FactionVisits adding icon " + image.name);
+                image.transform.localScale = Vector3.one;
+                image.sprite = sprite;
+                visits[targetPlayer].Add(image);
+                image.transform.localPosition = new Vector3(80 + 32 * (visits[targetPlayer].Count - 1), 0, 0);
+                image.gameObject.SetActive(true);
+            } catch (Exception e)
             {
-                image.transform.SetParent(tagetPlayerPanel.playerNameButton.transform);
+                Console.WriteLine("FactionVisits Error adding icon " + targetName);
+                Console.WriteLine("FactionVisits Error! " + e.Message);
+                Console.WriteLine("FactionVisits ErrorSource: " + e.Source);
+                Console.WriteLine("FactionVisits ErrorTrace: --\n" + e.StackTrace);
             }
-            Console.WriteLine("FactionVisits adding icon " + image.name);
-            image.transform.localScale = Vector3.one;
-            image.sprite = sprite;
-            visits[targetPlayer].Add(image);
-            image.transform.localPosition = new Vector3(80 + 32 * (visits[targetPlayer].Count - 1), 0, 0);
-            image.gameObject.SetActive(true);
         }
+
         internal int TargetsCount(MenuChoiceType abilityId, object role, int actorPlayer)
         {
             int counter = 0;
@@ -694,9 +716,11 @@ namespace FactionVisits
             {
                 for (int i = 0; i < imgs.Count; i++)
                 {
-                    if (imgs[i].gameObject.name == roleName)
+                    try {
+                        if (imgs[i].gameObject.name == roleName) counter++;
+                    } catch 
                     {
-                        counter++;
+                        Console.WriteLine($"FactionVisits ignoring error when counting {roleName}");
                     }
                 }
             }
@@ -724,23 +748,28 @@ namespace FactionVisits
             {
                 for (int i = 0; i < imgs.Count; i++)
                 {
-                    if (imgs[i].gameObject.name == roleName)
-                    {
-                        Image temp = imgs[i];
-                        Console.WriteLine("FactionVisits removing " + temp.gameObject.name + " because of target change or cancel");
-                        imgs.RemoveAt(i);
-                        UnityEngine.Object.DestroyImmediate(temp);
-                        removed = true;
-                    }
-                    if (removed && i < imgs.Count)
-                    {
-                        for (int j = i; j < imgs.Count; j++)
+                    try {
+                        if (imgs[i].gameObject.name == roleName)
                         {
-                            imgs[j].transform.localPosition -= new Vector3(32, 0, 0);
+                            Image temp = imgs[i];
+                            Console.WriteLine("FactionVisits removing " + temp.gameObject.name + " because of target change or cancel");
+                            imgs.RemoveAt(i);
+                            UnityEngine.Object.DestroyImmediate(temp);
+                            removed = true;
                         }
-                        i--;
+                        if (removed && i < imgs.Count)
+                        {
+                            for (int j = i; j < imgs.Count; j++)
+                            {
+                                imgs[j].transform.localPosition -= new Vector3(32, 0, 0);
+                            }
+                            i--;
+                        }
+                        removed = false;
+                    } catch 
+                    {
+                        Console.WriteLine($"FactionVisits ignoring error when removing {roleName}");
                     }
-                    removed = false;
                 }
             }
         }
