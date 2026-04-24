@@ -202,11 +202,9 @@ namespace FactionVisits
                     {
                         return;
                     }
-                    if (isCancel)
-                    {
-                        Manager.Instance.CancelTarget(MenuChoiceType.SpecialAbility, teammateRole, teammatePosition);
-                        return;
-                    }
+
+                    Manager.Instance.CancelTarget(MenuChoiceType.SpecialAbility, teammateRole, teammatePosition);
+
                     //Ignore if day ability has no targets, like starspawn's daybreak
                     if (teammateTarget1 == -1 && teammateTarget2 == -1) return;
                 }
