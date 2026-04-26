@@ -25,6 +25,7 @@ namespace FactionVisits
         public static bool isRapidMode = false;
         public static Dictionary<int, int> summonTargets = new Dictionary<int, int>();
         public static Dictionary<int, bool> tSpecialAbiilityData = new Dictionary<int, bool>();
+        public static int potionChoiceData = 1;
         //Roles whose abiility1 gets replaced when holding Necronomicon (Kinda guessing here)
         //As opposed to roles whose regular ability is the same but with an attack (Like ench+attack)
         public static List<Role> BookReplacesAbility = new List<Role>
@@ -49,6 +50,7 @@ namespace FactionVisits
             Role.MONARCH,
             Role.SOCIALITE,
             Role.JAILOR,
+            Role.POTIONMASTER,
             (Role)65 // BTOS2 Socialite
         };
         // Factional evil factions
@@ -92,16 +94,66 @@ namespace FactionVisits
             Interpreter.isRapidMode = false;
             Interpreter.summonTargets = new Dictionary<int, int>();
             Interpreter.tSpecialAbiilityData = new Dictionary<int, bool>();
+            Interpreter.potionChoiceData = 1;
         }
         internal static void HandleMessages(ChatLogMessage chatLogMessage)
         {
             if (chatLogMessage.chatLogEntry is ChatLogGameMessageEntry)
             {
                 ChatLogGameMessageEntry data = chatLogMessage.chatLogEntry as ChatLogGameMessageEntry;
-                if (data.messageId == GameFeedbackMessage.RAPID_MODE_STARTING)
+                bool clearOurIcons = false;
+                Role ourRole = Role.NONE;
+                switch (data.messageId)
                 {
-                    Console.WriteLine("TVI setting rapid mode to true");
-                    Interpreter.isRapidMode = true;
+                    case GameFeedbackMessage.RAPID_MODE_STARTING:
+                        Console.WriteLine("TVI setting rapid mode to true");
+                        Interpreter.isRapidMode = true;
+                        break;
+	        	    case GameFeedbackMessage.POTION_MASTER_POTION_CHOICE_ONE:
+                    case GameFeedbackMessage.POTION_MASTER_POTION_CHOICE_ONE_INSTEAD: //Barrier
+                        potionChoiceData = 1;
+                        clearOurIcons = true;
+                        ourRole = Role.POTIONMASTER;
+                        break;
+	            	case GameFeedbackMessage.POTION_MASTER_POTION_CHOICE_TWO:
+                    case GameFeedbackMessage.POTION_MASTER_POTION_CHOICE_TWO_INSTEAD: //Reveal
+                        potionChoiceData = 2;
+                        clearOurIcons = true;
+                        ourRole = Role.POTIONMASTER;
+                        break;
+	        	    case GameFeedbackMessage.POTION_MASTER_POTION_CHOICE_THREE:
+                    case GameFeedbackMessage.POTION_MASTER_POTION_CHOICE_THREE_INSTEAD: //Attack
+                        potionChoiceData = 3;
+                        clearOurIcons = true;
+                        ourRole = Role.POTIONMASTER;
+                        break;
+                    case (GameFeedbackMessage)1066:
+                    case (GameFeedbackMessage)1069: //BTOS2 Baker Wheat Loaf (Reveal)
+                        if (!Manager.isModded()) return;
+                        potionChoiceData = 1;
+                        clearOurIcons = true;
+                        ourRole = Role.BAKER;
+                        break;
+                    case (GameFeedbackMessage)1067:
+                    case (GameFeedbackMessage)1070: //BTOS2 Baker Rye Boule (Roleblock)
+                        if (!Manager.isModded()) return;
+                        potionChoiceData = 2;
+                        clearOurIcons = true;
+                        ourRole = Role.BAKER;
+                        break;
+                    case (GameFeedbackMessage)1068:
+                    case (GameFeedbackMessage)1071: //BTOS2 Baker Soul Cake (Barrier)
+                        if (!Manager.isModded()) return;
+                        potionChoiceData = 3;
+                        clearOurIcons = true;
+                        ourRole = Role.BAKER;
+                        break;
+                }
+                if (clearOurIcons)
+                {
+                    GameSimulation gameSimulation = Service.Game.Sim.simulation;
+                    Manager.Instance.ChangeTarget(MenuChoiceType.NightAbility, -1, null, ourRole, Service.Game.Sim.simulation.myPosition);
+                    Console.WriteLine("FactionVisits clearing own icons due to potion/bread switch");
                 }
             }
             if (!(Service.Game.Sim.info.gameInfo.Data.gamePhase == GamePhase.PLAY && (chatLogMessage.chatLogEntry is ChatLogFactionTargetSelectionFeedbackEntry || chatLogMessage.chatLogEntry is ChatLogTargetSelectionFeedbackEntry))) return;
@@ -118,6 +170,7 @@ namespace FactionVisits
                 MenuChoiceType menuChoiceType;
                 FactionType teammateFaction = Service.Game.Sim.simulation.myIdentity.Data.faction;
                 bool isMe = false;
+                int additData = 1;
 
                 if (chatLogMessage.chatLogEntry is ChatLogFactionTargetSelectionFeedbackEntry)
                 {
@@ -131,6 +184,7 @@ namespace FactionVisits
                     isChangingTarget = data.bIsChangingTarget;
                     isCancel = data.bIsCancel;
                     menuChoiceType = data.menuChoiceType;
+                    additData = data.specialData;
                 }
                 else
                 {
@@ -179,6 +233,12 @@ namespace FactionVisits
                         teammateRole = acolyteToHorsemen[teammateRole];
                         Console.WriteLine($"Fixed {teammatePosition} Role to {teammateRole}");
                     }
+                }
+
+                // Set correct extra data for self when PMer or BTOS2 Baker
+                if (isMe && (teammateRole == Role.POTIONMASTER || (teammateRole == Role.BAKER && Manager.isModded())))
+                {
+                    additData = potionChoiceData;
                 }
 
                 if (menuChoiceType == MenuChoiceType.SpecialAbility && teammateRole == Role.SHROUD)
@@ -344,7 +404,18 @@ namespace FactionVisits
                             teammateTarget2 = teammateTarget1;
                         }
                     }
-                    if (menuChoiceType == MenuChoiceType.NightAbility || ((teammateRole == Role.ILLUSIONIST || teammateRole == Role.JAILOR) && menuChoiceType == MenuChoiceType.NightAbility2))
+                    if (teammateRole == Role.POTIONMASTER || (Manager.isModded() && teammateRole == Role.BAKER))
+                    {
+                        if (teammateRole == Role.BAKER && !isMe) //Game doesn't tell us our teammates bread choice :( use Feed icon instead
+                        {
+                            sprite = Manager.GetSprite(roleData, teammateFaction, 3);
+                        }
+                        else if (!(teammateRole == Role.POTIONMASTER && additData == 3))
+                        {
+                            sprite = Manager.GetSprite(roleData, teammateFaction, additData);
+                        }
+                    }
+                    else if (menuChoiceType == MenuChoiceType.NightAbility || ((teammateRole == Role.ILLUSIONIST || teammateRole == Role.JAILOR) && menuChoiceType == MenuChoiceType.NightAbility2))
                     {
                         sprite = Manager.GetSprite(roleData, teammateFaction, 1);
                     }
@@ -374,8 +445,9 @@ namespace FactionVisits
                         sprite = Manager.GetSprite(roleData, teammateFaction, 3);
                     }
                 }
+                bool pmerNotUsingKillPot = teammateRole == Role.POTIONMASTER && additData != 3;
                 //Second part is a check for BTOS2 Coven-SK using Posses
-                if (hasNecronomicon && ((menuChoiceType == MenuChoiceType.NightAbility) || (teammateRole == Role.SHROUD) || (teammateRole == Role.SERIALKILLER && menuChoiceType == MenuChoiceType.NightAbility2 && Manager.isModded())))
+                if (hasNecronomicon && !pmerNotUsingKillPot && ((menuChoiceType == MenuChoiceType.NightAbility) || (teammateRole == Role.SHROUD) || (teammateRole == Role.SERIALKILLER && menuChoiceType == MenuChoiceType.NightAbility2 && Manager.isModded())))
                 {
                     bool isShrouding = false;
                     if (teammateRole == Role.SHROUD && tSpecialAbiilityData.ContainsKey(teammatePosition)) isShrouding = tSpecialAbiilityData[teammatePosition];
