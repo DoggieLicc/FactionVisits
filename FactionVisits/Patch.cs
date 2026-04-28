@@ -254,12 +254,15 @@ namespace FactionVisits
                     }
                 }
 
+                bool isFullMoon = Service.Game.Sim.info.gameInfo.Data.playPhase == PlayPhase.NIGHT && (Service.Game.Sim.info.daytime.Data.daynightNumber > 4 || Service.Game.Sim.info.daytime.Data.daynightNumber % 2 == 0);
                 float remainingTime = (float)(Service.Game.Sim.simulation.playPhaseState.Data.playPhaseTime - DateTime.UtcNow).TotalSeconds;
                 int dayNightNumber = Service.Game.Sim.info.daytime.Data.daynightNumber;
                 float secondHalfTime = Interpreter.isRapidMode ? 10f : 19f;
                 Console.WriteLine("FactionVisits - Remaining time: " + remainingTime);
                 Console.WriteLine("FactionVisits - Current Day/Night number: " + dayNightNumber);
                 bool potentiallyOvercharged = (!isCancel && !isChangingTarget) || isMe;
+
+                //Overcharge handler
                 if (dayNightNumber > 1 && Service.Game.Sim.info.gameInfo.Data.playPhase == PlayPhase.NIGHT && potentiallyOvercharged && remainingTime <= secondHalfTime && Manager.Instance.handleOvercharged && Manager.Instance.overchargedTeammate == -1)
                 {
                     int tgc1 = Manager.Instance.TargetsCount(MenuChoiceType.NightAbility, teammateRole, teammatePosition);
@@ -365,6 +368,16 @@ namespace FactionVisits
                     Manager.Instance.ChangeTarget(menuChoiceType, -1, null, teammateRole, teammatePosition);
                     return;
                 }
+
+                //Manually set ability to scent for ww
+                if (!isFullMoon && teammateRole == Role.WEREWOLF)
+                {
+                    menuChoiceType = MenuChoiceType.NightAbility2;
+                    teammateTarget2 = teammateTarget1;
+                    teammateTarget1 = -1;
+                    Console.WriteLine("FactionVisits Setting werewolf to 2");
+                }
+
                 Console.WriteLine("FactionVisits grabbing sprite");
                 //By default use role icon
                 Sprite sprite = Manager.GetSprite(roleData, teammateFaction, 0);
@@ -447,7 +460,7 @@ namespace FactionVisits
                 }
                 bool pmerNotUsingKillPot = teammateRole == Role.POTIONMASTER && additData != 3;
                 //Second part is a check for BTOS2 Coven-SK using Posses
-                if (hasNecronomicon && !pmerNotUsingKillPot && ((menuChoiceType == MenuChoiceType.NightAbility) || (teammateRole == Role.SHROUD) || (teammateRole == Role.SERIALKILLER && menuChoiceType == MenuChoiceType.NightAbility2 && Manager.isModded())))
+                if (hasNecronomicon && !pmerNotUsingKillPot && ((menuChoiceType == MenuChoiceType.NightAbility) || (teammateRole == Role.SHROUD || teammateRole == Role.WEREWOLF) || (teammateRole == Role.SERIALKILLER && menuChoiceType == MenuChoiceType.NightAbility2 && Manager.isModded())))
                 {
                     bool isShrouding = false;
                     if (teammateRole == Role.SHROUD && tSpecialAbiilityData.ContainsKey(teammatePosition)) isShrouding = tSpecialAbiilityData[teammatePosition];
@@ -989,6 +1002,7 @@ namespace FactionVisits
                 case Role.POISONER:
                 case Role.MEDUSA:
                 case Role.VAMPIRE:
+                case Role.WEREWOLF:
                     CancelTarget(MenuChoiceType.NightAbility, role, actorPlayer);
                     CancelTarget(MenuChoiceType.NightAbility2, role, actorPlayer);
                     break;
