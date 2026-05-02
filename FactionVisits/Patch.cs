@@ -99,6 +99,13 @@ namespace FactionVisits
         }
         internal static void HandleMessages(ChatLogMessage chatLogMessage)
         {
+            if (chatLogMessage.chatLogEntry is ChatLogWhoDiedEntry && ModSettings.GetBool("Day Ability Icons"))
+            {
+                ChatLogWhoDiedEntry data = chatLogMessage.chatLogEntry as ChatLogWhoDiedEntry;
+                KillRecord killRecord = data.killRecord;
+                Console.WriteLine($"FactionVisits clearing {killRecord.playerId}'s day icons, if any");
+                Manager.Instance.CancelTarget(MenuChoiceType.SpecialAbility, null, killRecord.playerId);
+            }
             if (chatLogMessage.chatLogEntry is ChatLogGameMessageEntry)
             {
                 ChatLogGameMessageEntry data = chatLogMessage.chatLogEntry as ChatLogGameMessageEntry;
@@ -108,8 +115,29 @@ namespace FactionVisits
                 switch (data.messageId)
                 {
                     case GameFeedbackMessage.RAPID_MODE_STARTING:
-                        Console.WriteLine("TVI setting rapid mode to true");
+                        Console.WriteLine("FactionVisits setting rapid mode to true");
                         Interpreter.isRapidMode = true;
+                        break;
+                    case GameFeedbackMessage.ROLE_RETRAIN_ACCEPTED:
+                        if (ModSettings.GetBool("Day Ability Icons"))
+                        {
+                            Console.WriteLine("FactionVisits clearing any day icons due to retrain");
+                            Manager.Instance.CancelTarget(MenuChoiceType.SpecialAbility, null, data.playerNumber1);
+                        }
+                        break;
+                    case GameFeedbackMessage.TARGET_IS_CURSED_SOUL: //BTOS2 Vamp promotion message
+                        if (Manager.isModded())
+                        {
+                            Console.WriteLine("FactionVisits clearing any day icons due to vamp promotion");
+                            Manager.Instance.CancelTarget(MenuChoiceType.SpecialAbility, null, data.playerNumber1);
+                        }
+                        break;
+                    case GameFeedbackMessage.PLAYER_IS_NOW_THE_MAIN_VAMPIRE: //Vanilla Vamp promotion message
+                        if (!Manager.isModded())
+                        {
+                            Console.WriteLine("FactionVisits clearing any day icons due to vamp promotion");
+                            Manager.Instance.CancelTarget(MenuChoiceType.SpecialAbility, null, data.playerNumber1);
+                        }
                         break;
 	        	    case GameFeedbackMessage.POTION_MASTER_POTION_CHOICE_ONE:
                     case GameFeedbackMessage.POTION_MASTER_POTION_CHOICE_ONE_INSTEAD: //Barrier
@@ -182,13 +210,13 @@ namespace FactionVisits
                         ourRole = Role.BAKER;
                         break;
                 }
-                if (clearOurIcons)
+                if (clearOurIcons && Manager.showOwnActions())
                 {
                     GameSimulation gameSimulation = Service.Game.Sim.simulation;
                     Manager.Instance.ChangeTarget(MenuChoiceType.NightAbility, -1, null, ourRole, Service.Game.Sim.simulation.myPosition);
                     Console.WriteLine("FactionVisits clearing own icons due to potion/bread switch");
                 }
-                if (replaceOurIcons && ModSettings.GetString("Display Mode") == "Ability Icon")
+                if (replaceOurIcons && ModSettings.GetString("Display Mode") == "Ability Icon" && Manager.showOwnActions())
                 {
                     RoleCardData rcData = Service.Game.Sim.info.roleCardObservation.Data;
                     GameSimulation gameSimulation = Service.Game.Sim.simulation;
@@ -245,23 +273,7 @@ namespace FactionVisits
                     GameSimulation gameSimulation = Service.Game.Sim.simulation;
                     RoleCardObservation roleCardObservation = Service.Game.Sim.info.roleCardObservation;
                     ChatLogTargetSelectionFeedbackEntry data = chatLogMessage.chatLogEntry as ChatLogTargetSelectionFeedbackEntry;
-                    switch (ModSettings.GetString("Show Own Actions"))
-                    {
-                        default:
-                        case "Never":
-                            return;
-                        case "Only as Factional Evil":
-                            PlayerIdentityData myIdentity = (PlayerIdentityData)gameSimulation.myIdentity;
-                            FactionType faction = myIdentity.faction;
-                            if (!factionsWithChat.Contains(faction))
-                            {
-                                return;
-                            }
-                            if (Manager.isModded() && data.currentRole == (Role)55) return; //Role 55 is BTOS2 Jackal
-                            break;
-                        case "Always":
-                            break;
-                    }
+                    if (!Manager.showOwnActions()) return;
                     teammatePosition = gameSimulation.myPosition;
                     teammateRole = data.currentRole;
                     teammateTarget1 = data.playerNumber1;
@@ -858,23 +870,32 @@ namespace FactionVisits
             Type btosInfo = Settings.betterTos.GetType("BetterTOS2.BTOSInfo");
             return (bool)btosInfo.GetField("IS_MODDED", BindingFlags.Static | BindingFlags.Public).GetValue(null);
         }
+        public static bool showOwnActions()
+        {
+            switch (ModSettings.GetString("Show Own Actions"))
+            {
+                default:
+                case "Never":
+                    return false;
+                case "Only as Factional Evil":
+                    GameSimulation gameSimulation = Service.Game.Sim.simulation;
+                    PlayerIdentityData myIdentity = (PlayerIdentityData)gameSimulation.myIdentity;
+                    FactionType faction = myIdentity.faction;
+                    if (!Interpreter.factionsWithChat.Contains(faction))
+                    {
+                        return false;
+                    }
+                    if (Manager.isModded() && myIdentity.role == (Role)55) return false; //Role 55 is BTOS2 Jackal
+                    return true;
+                case "Always":
+                    return true;
+            }
+        }
         internal void AddTarget(MenuChoiceType abilityId, int targetPlayer, Sprite sprite, object role, int actorPlayer)
         {
             //Adds the sprite to a list with a special name to mark it aparta by player, role and ability
             TosAbilityPanelListItem tagetPlayerPanel = Panel.playerListPlayers[targetPlayer];
-            string targetName = $"{role}({actorPlayer})";
-            if (abilityId == MenuChoiceType.NightAbility2)
-            {
-                targetName += "2";
-            }
-            else if (abilityId == MenuChoiceType.SpecialAbility)
-            {
-                targetName += "S";
-            }
-            if (actorPlayer == overchargedTeammate)
-            {
-                targetName += "C";
-            }
+            string targetName = GetRoleName(abilityId, role, actorPlayer);
             try
             {
                 Image image = UnityEngine.Object.Instantiate(Panel.playerListPlayers[targetPlayer].effectImage2);
@@ -905,19 +926,7 @@ namespace FactionVisits
         internal int GetTarget(MenuChoiceType abilityId, object role, int actorPlayer)
         {
             int counter = 0;
-            string roleName = $"{role}({actorPlayer})";
-            if (abilityId == MenuChoiceType.NightAbility2)
-            {
-                roleName += "2";
-            }
-            else if (abilityId == MenuChoiceType.SpecialAbility)
-            {
-                roleName += "S";
-            }
-            if (actorPlayer == overchargedTeammate)
-            {
-                roleName += "C";
-            }
+            string roleName = GetRoleName(abilityId, role, actorPlayer);
             Console.WriteLine("FactionVisits get target: " + roleName);
             foreach (List<Image> imgs in visits.Values)
             {
@@ -938,19 +947,7 @@ namespace FactionVisits
         internal int TargetsCount(MenuChoiceType abilityId, object role, int actorPlayer)
         {
             int counter = 0;
-            string roleName = $"{role}({actorPlayer})";
-            if (abilityId == MenuChoiceType.NightAbility2)
-            {
-                roleName += "2";
-            }
-            else if (abilityId == MenuChoiceType.SpecialAbility)
-            {
-                roleName += "S";
-            }
-            if (actorPlayer == overchargedTeammate)
-            {
-                roleName += "C";
-            }
+            string roleName = GetRoleName(abilityId, role, actorPlayer);
             Console.WriteLine("FactionVisits count target: " + roleName);
             foreach (List<Image> imgs in visits.Values)
             {
@@ -970,26 +967,14 @@ namespace FactionVisits
         {
             //Removes the requested sprite from the list of sprites
             bool removed = false;
-            string roleName = $"{role}({actorPlayer})";
-            if (abilityId == MenuChoiceType.NightAbility2)
-            {
-                roleName += "2";
-            }
-            else if (abilityId == MenuChoiceType.SpecialAbility)
-            {
-                roleName += "S";
-            }
-            if (actorPlayer == overchargedTeammate)
-            {
-                roleName += "C";
-            }
+            string roleName = GetRoleName(abilityId, role, actorPlayer);
             Console.WriteLine("FactionVisits removal target: " + roleName);
             foreach (List<Image> imgs in visits.Values)
             {
                 for (int i = 0; i < imgs.Count; i++)
                 {
                     try {
-                        if (imgs[i].gameObject.name == roleName)
+                        if (imgs[i].gameObject.name.Contains(roleName))
                         {
                             Image temp = imgs[i];
                             Console.WriteLine("FactionVisits removing " + temp.gameObject.name + " because of target change or cancel");
@@ -1115,6 +1100,28 @@ namespace FactionVisits
             if (targetPlayer == -1 || sprite == null) return;
             Console.WriteLine("FactionVisits adding icon to new target");
             AddTarget(abilityId, targetPlayer, sprite, role, actorPlayer);
+        }
+        internal string GetRoleName(MenuChoiceType abilityId, object role, int actorPlayer)
+        {
+            string roleName = $"{role}({actorPlayer})";
+            if (role == null) roleName = $"({actorPlayer})";
+            if (abilityId == MenuChoiceType.NightAbility)
+            {
+                roleName += "1";
+            }
+            if (abilityId == MenuChoiceType.NightAbility2)
+            {
+                roleName += "2";
+            }
+            else if (abilityId == MenuChoiceType.SpecialAbility)
+            {
+                roleName += "S";
+            }
+            if (actorPlayer == overchargedTeammate)
+            {
+                roleName += "C";
+            }
+            return roleName;
         }
         internal void Clear()
         {
