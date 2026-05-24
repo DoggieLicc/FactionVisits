@@ -1,10 +1,15 @@
 {
   "HarmonyId": "doggie.licc.factionvisits",
   "DisplayName": "Faction Visits",
-  "Authors": [ "Pokegustavo", "DoggieLicc" ],
+  "Authors": [
+    "Pokegustavo",
+    "DoggieLicc"
+  ],
   "Description": "Shows who your faction allies are targeting",
   "Version": "1.3.6",
   "RequiredMods": [],
-  "ConflictingMods": [ "pokegustavo.FactionVisits" ],
+  "ConflictingMods": [
+    "pokegustavo.FactionVisits"
+  ],
   "Discord": "https://discord.gg/d7dgReCnRR"
 }
