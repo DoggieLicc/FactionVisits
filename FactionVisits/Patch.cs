@@ -1760,7 +1760,10 @@ namespace FactionVisits
                 default:
                     break;
                 case 1:
-                    RoleName += "_Ability_1";
+                    if (role == Role.JAILOR)
+                        RoleName += "_Ability_2";
+                    else
+                        RoleName += "_Ability_1";
                     break;
                 case 2:
                     RoleName += "_Ability_2";
