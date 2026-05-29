@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>14.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,7 +26,7 @@
       <HintPath>Sources/0Harmony.dll</HintPath>
     </Reference>
 
-    <Reference Include="SalemModLoader">
+    <Reference Include="SalemModLoader, Version=0.7.3.0, Culture=neutral, ...">
       <HintPath>Sources/SalemModLoader.dll</HintPath>
     </Reference>
 
