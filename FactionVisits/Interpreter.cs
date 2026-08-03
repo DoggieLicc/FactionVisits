@@ -75,6 +75,7 @@ internal class Interpreter
         Role.CULTIST,
         Role.DOOMSAYER, //BTOS2 Doom moment
         Role.PIRATE, //BTOS2 Pirate moment
+        Role.AMNESIAC, //BTOS2 Amne moment
         (Role)64, //BTOS2 Cultist
         (Role)65, //BTOS2 Socialite
     ];
@@ -515,8 +516,8 @@ internal class Interpreter
                     teammatePosition
                 );
 
-                //Ignore if day ability has no targets, like starspawn's daybreak
-                if (teammateTarget1 == -1 && teammateTarget2 == -1)
+                //Ignore if day ability has no targets, like starspawn's daybreak (except amne)
+                if (teammateTarget1 == -1 && teammateTarget2 == -1 && teammateRole != Role.AMNESIAC)
                     return;
             }
 
@@ -932,6 +933,20 @@ internal class Interpreter
             {
                 sprite = Manager.GetSprite(roleData, teammateFaction, 3);
             }
+            // BTOS2 Amnesiac Day Ability: Show role theyre remembering
+            if (
+                Manager.IsModded()
+                && teammateRole == Role.AMNESIAC
+                && menuChoiceType == MenuChoiceType.SpecialAbility
+                && Service.Game.Sim.info.gameInfo.Data.playPhase != PlayPhase.NIGHT
+                && teammateTargetRole != Role.NONE
+            )
+            {
+                UIRoleData.UIRoleDataInstance rememberRoleData = panel.roleData.roleDataList.Find(
+                    d => d.role == teammateTargetRole
+                );
+                sprite = Manager.GetSprite(rememberRoleData, teammateFaction);
+            }
             Console.WriteLine("FactionVisits starting the request");
             switch (menuChoiceType)
             {
@@ -1023,6 +1038,10 @@ internal class Interpreter
                         teammateTargetingPosition == teammatePosition
                         && (teammateTargetRole != Role.NONE)
                         && ModSettings.GetString("Special Ability Icon") != "No Icon"
+                        && (
+                            (teammateRole == Role.ORACLE && !Manager.IsModded())
+                            || (teammateRole == (Role)61 && Manager.IsModded())
+                        )
                     )
                     {
                         Manager.Instance.CancelTarget(
@@ -1100,6 +1119,18 @@ internal class Interpreter
                                 teammatePosition
                             );
                         }
+                        return;
+                    }
+                    // BTOS2 AMNE: Always add role icon (we've already checked for settings beforehand.)
+                    if (teammateRole == Role.AMNESIAC && Manager.IsModded())
+                    {
+                        Manager.Instance.ChangeTarget(
+                            MenuChoiceType.SpecialAbility,
+                            teammateTargetingPosition,
+                            sprite,
+                            teammateRole,
+                            teammatePosition
+                        );
                         return;
                     }
                     switch (ModSettings.GetString("Special Ability Icon"))
