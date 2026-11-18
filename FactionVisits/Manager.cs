@@ -439,37 +439,52 @@ internal class Manager
         Sprite sprite;
         if (ModStates.IsEnabled("alchlcsystm.fancy.ui") && Settings.fancyUI != null)
         {
-            //Get sprite from Fancy UI if found
-            sprite = GetFancyUISprite(instance.role, faction, ability);
-            if (
-                sprite
-                != (
-                    (Sprite)
-                        Settings
-                            .fancyUI.GetType("FancyUI.Assets.FancyAssetManager")
-                            .GetProperty("Blank", BindingFlags.Static | BindingFlags.Public)
-                            .GetValue(null)
+            try
+            {
+                //Get sprite from Fancy UI if found
+                sprite = GetFancyUISprite(instance.role, faction, ability);
+                if (
+                    sprite
+                    != (
+                        (Sprite)
+                            Settings
+                                .fancyUI.GetType("FancyUI.Assets.FancyAssetManager")
+                                .GetProperty("Blank", BindingFlags.Static | BindingFlags.Public)
+                                .GetValue(null)
+                    )
                 )
-            )
-                return sprite;
-            Console.WriteLine(
-                $"FactionVisits no FancyUI sprite found for {instance.role}({ability})[{faction}], gonna retry with base faction"
-            );
-            sprite = GetFancyUISprite(instance.role, null, ability);
-            if (
-                sprite
-                != (
-                    (Sprite)
-                        Settings
-                            .fancyUI.GetType("FancyUI.Assets.FancyAssetManager")
-                            .GetProperty("Blank", BindingFlags.Static | BindingFlags.Public)
-                            .GetValue(null)
+                    return sprite;
+                Console.WriteLine(
+                    $"FactionVisits no FancyUI sprite found for {instance.role}({ability})[{faction}], gonna retry with base faction"
+                );
+                sprite = GetFancyUISprite(instance.role, null, ability);
+                if (
+                    sprite
+                    != (
+                        (Sprite)
+                            Settings
+                                .fancyUI.GetType("FancyUI.Assets.FancyAssetManager")
+                                .GetProperty("Blank", BindingFlags.Static | BindingFlags.Public)
+                                .GetValue(null)
+                    )
                 )
-            )
-                return sprite;
-            Console.WriteLine(
-                $"FactionVisits no FancyUI sprite found for {instance.role}({ability}), using vanilla sprite."
-            );
+                    return sprite;
+                Console.WriteLine(
+                    $"FactionVisits no FancyUI sprite found for {instance.role}({ability}), using vanilla sprite."
+                );
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(
+                    $"!!!!! FactionVisits got unexpected error when getting FancyUI sprite!!! !!!!!"
+                );
+                Console.WriteLine(
+                    $"!!!!! FactionVisits Falling back to vanilla sprite, but get doggie to fix this. !!!!!"
+                );
+                Console.WriteLine("FactionVisits Error! " + e.Message);
+                Console.WriteLine("FactionVisitsFancy ErrorSource: " + e.Source);
+                Console.WriteLine("FactionVisitsFancy ErrorTrace: --\n" + e.StackTrace);
+            }
         }
         //Get vannila icons
         sprite = ability switch
