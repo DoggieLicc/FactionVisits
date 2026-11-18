@@ -19,23 +19,23 @@
 
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>Sources/Assembly-CSharp.dll</HintPath>
+      <HintPath>lib/Assembly-CSharp.dll</HintPath>
     </Reference>
 
     <Reference Include="0Harmony">
-      <HintPath>Sources/0Harmony.dll</HintPath>
+      <HintPath>lib/0Harmony.dll</HintPath>
     </Reference>
 
     <Reference Include="SalemModLoader, Version=0.7.3.0, Culture=neutral, ...">
-      <HintPath>Sources/SalemModLoader.dll</HintPath>
+      <HintPath>lib/SalemModLoader.dll</HintPath>
     </Reference>
 
     <Reference Include="UnityEngine.UI">
-      <HintPath>Sources/UnityEngine.UI.dll</HintPath>
+      <HintPath>lib/UnityEngine.UI.dll</HintPath>
     </Reference>
 
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>Sources/UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>lib/UnityEngine.CoreModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 

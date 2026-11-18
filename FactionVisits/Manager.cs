@@ -526,10 +526,11 @@ internal class Manager
                         Settings.fancyUI.GetType("FancyUI.GameModType"),
                         typeof(bool),
                         typeof(bool),
+                        typeof(bool),
                     ],
                     null
                 )
-                .Invoke(null, [faction, null, true, false]);
+                .Invoke(null, [faction, null, true, false, true]);
         //Get sprite
         Sprite sprite = (Sprite)
             fancyuiassman
