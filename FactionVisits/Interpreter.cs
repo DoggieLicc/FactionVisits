@@ -106,7 +106,7 @@ internal class Interpreter
         {
             ChatLogWhoDiedEntry data = chatLogMessage.chatLogEntry as ChatLogWhoDiedEntry;
             KillRecord killRecord = data.killRecord;
-            Console.WriteLine($"FactionVisits clearing {killRecord.playerId}'s day icons, if any");
+            ModLogger.Log($"Clearing {killRecord.playerId}'s day icons, if any");
             Manager.Instance.CancelTarget(MenuChoiceType.SpecialAbility, null, killRecord.playerId);
         }
         if (chatLogMessage.chatLogEntry is ChatLogGameMessageEntry)
@@ -118,13 +118,13 @@ internal class Interpreter
             switch (data.messageId)
             {
                 case GameFeedbackMessage.RAPID_MODE_STARTING:
-                    Console.WriteLine("FactionVisits setting rapid mode to true");
+                    ModLogger.Log("Setting rapid mode to true");
                     isRapidMode = true;
                     break;
                 case GameFeedbackMessage.ROLE_RETRAIN_ACCEPTED:
                     if (ModSettings.GetBool("Day Ability Icons"))
                     {
-                        Console.WriteLine("FactionVisits clearing any day icons due to retrain");
+                        ModLogger.Log("clearing any day icons due to retrain");
                         Manager.Instance.CancelTarget(
                             MenuChoiceType.SpecialAbility,
                             null,
@@ -135,9 +135,7 @@ internal class Interpreter
                 case GameFeedbackMessage.TARGET_IS_CURSED_SOUL: //BTOS2 Vamp promotion message
                     if (Manager.IsModded())
                     {
-                        Console.WriteLine(
-                            "FactionVisits clearing any day icons due to vamp promotion"
-                        );
+                        ModLogger.Log("Clearing any day icons due to vamp promotion");
                         Manager.Instance.CancelTarget(
                             MenuChoiceType.SpecialAbility,
                             null,
@@ -148,9 +146,7 @@ internal class Interpreter
                 case GameFeedbackMessage.PLAYER_IS_NOW_THE_MAIN_VAMPIRE: //Vanilla Vamp promotion message
                     if (!Manager.IsModded())
                     {
-                        Console.WriteLine(
-                            "FactionVisits clearing any day icons due to vamp promotion"
-                        );
+                        ModLogger.Log("Clearing any day icons due to vamp promotion");
                         Manager.Instance.CancelTarget(
                             MenuChoiceType.SpecialAbility,
                             null,
@@ -244,7 +240,7 @@ internal class Interpreter
                     ourRole,
                     Service.Game.Sim.simulation.myPosition
                 );
-                Console.WriteLine("FactionVisits clearing own icons due to potion/bread switch");
+                ModLogger.Log("Clearing own icons due to potion/bread switch");
             }
             if (
                 replaceOurIcons
@@ -281,7 +277,7 @@ internal class Interpreter
                     ourRole,
                     Service.Game.Sim.simulation.myPosition
                 );
-                Console.WriteLine("FactionVisits replacing own icons due to doll switch");
+                ModLogger.Log("Replacing own icons due to doll switch");
                 if (rcData.hasNecronomicon && ModSettings.GetString("Book Icon") == "Add Icon")
                 {
                     Sprite bookSprite = Service
@@ -377,7 +373,7 @@ internal class Interpreter
                 if (rfTuple != null && rfTuple.Item1 == acolyteToHorsemen[teammateRole])
                 {
                     teammateRole = acolyteToHorsemen[teammateRole];
-                    Console.WriteLine($"Fixed {teammatePosition} Role to {teammateRole}");
+                    ModLogger.Log($"Fixed {teammatePosition} Role to {teammateRole}");
                 }
             }
 
@@ -402,7 +398,7 @@ internal class Interpreter
 
             if (menuChoiceType == MenuChoiceType.SpecialAbility && teammateRole == Role.SHROUD)
             {
-                Console.WriteLine("FactionVisits toggleable special ability data to cache");
+                ModLogger.Log("Toggleable special ability data to cache");
                 if (tSpecialAbiilityData.ContainsKey(teammatePosition))
                 {
                     tSpecialAbiilityData[teammatePosition] = !isCancel;
@@ -425,8 +421,8 @@ internal class Interpreter
                 ).TotalSeconds;
             int dayNightNumber = Service.Game.Sim.info.daytime.Data.daynightNumber;
             float secondHalfTime = Interpreter.isRapidMode ? 10f : 19f;
-            Console.WriteLine("FactionVisits - Remaining time: " + remainingTime);
-            Console.WriteLine("FactionVisits - Current Day/Night number: " + dayNightNumber);
+            ModLogger.Log("Remaining time: " + remainingTime);
+            ModLogger.Log("Current Day/Night number: " + dayNightNumber);
             bool potentiallyOvercharged = (!isCancel && !isChangingTarget) || isMe;
 
             //Overcharge handler
@@ -492,9 +488,7 @@ internal class Interpreter
                     && !fakeOvercharged
                 )
                 {
-                    Console.WriteLine(
-                        "FactionVisits - Setting " + teammatePosition + " as overcharged teammate"
-                    );
+                    ModLogger.Log("Setting " + teammatePosition + " as overcharged teammate");
                     Manager.Instance.overchargedTeammate = teammatePosition;
                 }
             }
@@ -522,32 +516,14 @@ internal class Interpreter
             }
 
             UIRoleData.UIRoleDataInstance roleData = null;
-            Console.Write(
-                $"FactionVisits recieved message: player {teammatePosition + 1} (role {teammateRole}) has decided to "
-            );
-            if (isCancel)
-            {
-                Console.WriteLine($"Cancel their night ability");
-            }
-            else if (isChangingTarget)
-            {
-                Console.WriteLine($"Change their target to {teammateTarget1}");
-            }
-            else
-            {
-                Console.WriteLine($"Target {teammateTarget1}");
-            }
-            Console.WriteLine(
-                $"They {(hasNecronomicon ? "have" : "don't have")} the necronomicon!"
-            );
             if (panel == null)
             {
                 panel = UnityEngine.Object.FindObjectOfType<RoleCardPanel>();
-                Console.WriteLine("FactionVisits panel was null, a new one was grabbed");
+                ModLogger.Log("Panel was null, a new one was grabbed");
             }
             if (panel == null)
             {
-                Console.WriteLine("FactionVisits There was no panel");
+                ModLogger.Log("There was no panel");
                 return;
             }
             roleData = panel.roleData.roleDataList.Find(d => d.role == teammateRole);
@@ -555,7 +531,7 @@ internal class Interpreter
             if (roleData == null || roleData.roleIcon == null)
                 return;
 
-            Console.WriteLine("FactionVisits all roledata grabed with success");
+            ModLogger.Log("All roledata grabbed with success");
 
             //Get correct teammate faction if we're a recruit
             if (!isMe && Manager.Instance.amIRecruited)
@@ -567,16 +543,14 @@ internal class Interpreter
                 if (rfTuple == null)
                 {
                     teammateFaction = FactionType.NONE;
-                    Console.WriteLine(
-                        $"FactionVisits as a recruit, unable to get faction of {teammatePosition}"
-                    );
+                    ModLogger.Log($"As a recruit, unable to get faction of {teammatePosition}");
                 }
                 else
                 {
                     teammateFaction = rfTuple.Item2;
                 }
-                Console.WriteLine(
-                    $"FactionVisits as a recruit, setting faction of {teammatePosition} to {teammateFaction}"
+                ModLogger.Log(
+                    $"As a recruit, setting faction of {teammatePosition} to {teammateFaction}"
                 );
             }
 
@@ -587,7 +561,7 @@ internal class Interpreter
                 && !(hasNecronomicon && menuChoiceType == MenuChoiceType.NightAbility)
             )
             {
-                Console.WriteLine("FactionVisits handling Pacifist rally");
+                ModLogger.Log("Handling Pacifist rally");
                 if (ModSettings.GetString("Display Mode") == "No Icon")
                     return;
                 Sprite pacSprite = Manager.GetSprite(roleData, teammateFaction, 0);
@@ -608,7 +582,7 @@ internal class Interpreter
                     );
                     return;
                 }
-                Console.WriteLine("FactionVisits adding Pacifist sprite with name: " + roleName);
+                ModLogger.Log("Adding Pacifist sprite with name: " + roleName);
 
                 Manager.Instance.AddTarget(
                     MenuChoiceType.NightAbility2,
@@ -641,10 +615,10 @@ internal class Interpreter
                 menuChoiceType = MenuChoiceType.NightAbility2;
                 teammateTarget2 = teammateTarget1;
                 teammateTarget1 = -1;
-                Console.WriteLine("FactionVisits Setting werewolf to 2");
+                ModLogger.Log("Setting werewolf to 2");
             }
 
-            Console.WriteLine("FactionVisits grabbing sprite");
+            ModLogger.Log("Grabbing sprite...");
             //By default use role icon
             Sprite sprite = Manager.GetSprite(roleData, teammateFaction, 0);
             Sprite sprite2 = null;
@@ -657,11 +631,11 @@ internal class Interpreter
             {
                 if (teammateRole == Role.SHROUD)
                 {
-                    Console.WriteLine("FactionVisits handling shroud");
+                    ModLogger.Log("Handling shroud");
                     bool useShroudingIcon = false;
                     if (tSpecialAbiilityData.ContainsKey(teammatePosition))
                         useShroudingIcon = tSpecialAbiilityData[teammatePosition];
-                    Console.WriteLine("FactionVisits is shrouding?: " + useShroudingIcon);
+                    ModLogger.Log("is shrouding?: " + useShroudingIcon);
                     if (menuChoiceType == MenuChoiceType.SpecialAbility)
                     {
                         int oldTarget = Manager.Instance.GetTarget(
@@ -677,7 +651,7 @@ internal class Interpreter
                             );
                         if (oldTarget == -1)
                             return;
-                        Console.WriteLine("FactionVisits found shrouded target: " + oldTarget);
+                        ModLogger.Log("Found shrouded target: " + oldTarget);
                         if (useShroudingIcon)
                         {
                             menuChoiceType = MenuChoiceType.NightAbility2;
@@ -733,7 +707,7 @@ internal class Interpreter
                     if (!sprite)
                     {
                         sprite = Manager.GetSprite(roleData, teammateFaction, 1);
-                        Console.WriteLine("FactionVisits DM ability 1 case scenario");
+                        ModLogger.Log("DM ability 1 case scenario");
                     }
                     //Fail-Failsafe
                     if (!sprite)
@@ -743,7 +717,7 @@ internal class Interpreter
                     //Fail-Fail-Failsafe
                     if (!sprite)
                     {
-                        Console.WriteLine("FactionVisits - No sprites found, using role");
+                        ModLogger.Log("No sprites found, using role");
                         sprite = Manager.GetSprite(roleData, teammateFaction, 0);
                     }
                 }
@@ -790,9 +764,7 @@ internal class Interpreter
                         )
                     )
                     && ModSettings.GetString("Display Mode") == "Ability Icon";
-                Console.WriteLine(
-                    "FactionVisits book handler - replaceAbility?: " + replaceAbility
-                );
+                ModLogger.Log("Book handler - replaceAbility?: " + replaceAbility);
                 switch (ModSettings.GetString("Book Icon"))
                 {
                     case "No Icon":
@@ -833,7 +805,7 @@ internal class Interpreter
                 if (menuChoiceType == MenuChoiceType.SpecialAbility)
                 {
                     //Add summon info to cache
-                    Console.WriteLine("FactionVisits adding summon target to cache");
+                    ModLogger.Log("Adding summon target to cache");
                     if (summonTargets.ContainsKey(teammatePosition))
                     {
                         summonTargets.Remove(teammatePosition);
@@ -857,7 +829,7 @@ internal class Interpreter
                         {
                             revivalRole = killRecord.hiddenPlayerRole;
                         }
-                        Console.WriteLine("FactionVisits revived player role: " + revivalRole);
+                        ModLogger.Log("Revived player role: " + revivalRole);
                         //Check if is valid know role
                         if (
                             revivalRole != Role.NONE
@@ -877,26 +849,24 @@ internal class Interpreter
                             }
                             if (revivedFaction == FactionType.UNKNOWN)
                             {
-                                Console.WriteLine(
-                                    "FactionVisits revived player faction is stoned or hidden, setting to none"
+                                ModLogger.Log(
+                                    "Revived player faction is stoned or hidden, setting to none"
                                 );
                                 revivedFaction = FactionType.NONE;
                             }
-                            Console.WriteLine(
-                                "FactionVisits revived player faction: " + revivedFaction
-                            );
+                            ModLogger.Log("Revived player faction: " + revivedFaction);
                             sprite = Manager.GetSprite(revivalRoleData, revivedFaction, 0);
                         }
                         else
                         {
                             //If unable to get icon of the role been revived, put ability 2 icon
-                            Console.WriteLine("FactionVisits invalid revival role");
+                            ModLogger.Log("invalid revival role");
                             sprite = Manager.GetSprite(roleData, teammateFaction, 2);
                         }
                     }
                     catch (KeyNotFoundException)
                     {
-                        Console.WriteLine("FactionVisits summon info not found");
+                        ModLogger.Log("summon info not found");
                         sprite = Manager.GetSprite(roleData, teammateFaction, 2);
                     }
                 }
@@ -915,13 +885,13 @@ internal class Interpreter
                 && menuChoiceType == MenuChoiceType.NightAbility2
             )
             {
-                Console.WriteLine("FactionVisits ability 2 case scenario");
+                ModLogger.Log("Ability 2 case scenario");
                 sprite = Manager.GetSprite(roleData, teammateFaction, 2);
             }
             //Always apply ability icon when it comes to special abilities
             if (menuChoiceType == MenuChoiceType.SpecialAbility)
             {
-                Console.WriteLine("FactionVisits special ability case scenario");
+                ModLogger.Log("Special ability case scenario");
                 sprite = Manager.GetSprite(roleData, teammateFaction, 3);
             }
             // Always use matchmake icon for btos2 seer ability2
@@ -947,7 +917,7 @@ internal class Interpreter
                 );
                 sprite = Manager.GetSprite(rememberRoleData, teammateFaction);
             }
-            Console.WriteLine("FactionVisits starting the request");
+            ModLogger.Log("Starting the request");
             switch (menuChoiceType)
             {
                 case MenuChoiceType.NightAbility:
@@ -1167,9 +1137,12 @@ internal class Interpreter
         }
         catch (Exception e)
         {
-            Console.WriteLine("FactionVisits Error! " + e.Message);
-            Console.WriteLine("FactionVisits ErrorSource: " + e.Source);
-            Console.WriteLine("FactionVisits ErrorTrace: --\n" + e.StackTrace);
+            ModLogger.Log("Error! " + e.Message);
+            ModLogger.Log("Error Source: " + e.Source);
+            ModLogger.Log("Error Trace: --\n" + e.StackTrace);
+            ModLogger.LogErrorToUserOnce(
+                $"An error occurred! If things seem broken, tell doggie. This message will only be shown once. \n\n '{e.Message}'-'{e.Source}'-'{e.StackTrace}'"
+            );
         }
     }
 }

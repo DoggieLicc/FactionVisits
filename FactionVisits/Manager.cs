@@ -160,7 +160,7 @@ internal class Manager
             {
                 image.transform.SetParent(tagetPlayerPanel.playerNameButton.transform);
             }
-            Console.WriteLine("FactionVisits adding icon " + image.name);
+            ModLogger.Log("Adding icon " + image.name);
             image.transform.localScale = Vector3.one;
             image.sprite = sprite;
             visits[targetPlayer].Add(image);
@@ -173,10 +173,13 @@ internal class Manager
         }
         catch (Exception e)
         {
-            Console.WriteLine("FactionVisits Error adding icon " + targetName);
-            Console.WriteLine("FactionVisits Error! " + e.Message);
-            Console.WriteLine("FactionVisits ErrorSource: " + e.Source);
-            Console.WriteLine("FactionVisits ErrorTrace: --\n" + e.StackTrace);
+            ModLogger.Log("Error adding icon " + targetName);
+            ModLogger.Log("Error! " + e.Message);
+            ModLogger.Log("Error Source: " + e.Source);
+            ModLogger.Log("Error Trace: --\n" + e.StackTrace);
+            ModLogger.LogErrorToUserOnce(
+                $"An error occurred adding icon for {targetName}! If things seem broken, tell doggie. This message will only be shown once. \n\n '{e.Message}'-'{e.Source}'-'{e.StackTrace}'"
+            );
         }
     }
 
@@ -184,7 +187,7 @@ internal class Manager
     {
         int counter = 0;
         string roleName = GetRoleName(abilityId, role, actorPlayer);
-        Console.WriteLine("FactionVisits get target: " + roleName);
+        ModLogger.Log("Get target: " + roleName);
         foreach (List<Image> imgs in visits.Values)
         {
             for (int i = 0; i < imgs.Count; i++)
@@ -196,7 +199,7 @@ internal class Manager
                 }
                 catch
                 {
-                    Console.WriteLine($"FactionVisits ignoring error when getting {roleName}");
+                    ModLogger.Log($"Ignoring error when getting {roleName}");
                 }
             }
             counter++;
@@ -208,7 +211,7 @@ internal class Manager
     {
         int counter = 0;
         string roleName = GetRoleName(abilityId, role, actorPlayer);
-        Console.WriteLine("FactionVisits count target: " + roleName);
+        ModLogger.Log("Count target: " + roleName);
         foreach (List<Image> imgs in visits.Values)
         {
             for (int i = 0; i < imgs.Count; i++)
@@ -220,7 +223,7 @@ internal class Manager
                 }
                 catch
                 {
-                    Console.WriteLine($"FactionVisits ignoring error when counting {roleName}");
+                    ModLogger.Log($"Ignoring error when counting {roleName}");
                 }
             }
         }
@@ -232,7 +235,7 @@ internal class Manager
         //Removes the requested sprite from the list of sprites
         bool removed = false;
         string roleName = GetRoleName(abilityId, role, actorPlayer);
-        Console.WriteLine("FactionVisits removal target: " + roleName);
+        ModLogger.Log("Removal target: " + roleName);
         foreach (List<Image> imgs in visits.Values)
         {
             for (int i = 0; i < imgs.Count; i++)
@@ -242,8 +245,8 @@ internal class Manager
                     if (imgs[i].gameObject.name.Contains(roleName))
                     {
                         Image temp = imgs[i];
-                        Console.WriteLine(
-                            "FactionVisits removing "
+                        ModLogger.Log(
+                            "Removing "
                                 + temp.gameObject.name
                                 + " because of target change or cancel"
                         );
@@ -263,7 +266,7 @@ internal class Manager
                 }
                 catch
                 {
-                    Console.WriteLine($"FactionVisits ignoring error when removing {roleName}");
+                    ModLogger.Log($"Ignoring error when removing {roleName}");
                 }
             }
         }
@@ -278,7 +281,7 @@ internal class Manager
     )
     {
         //First removes all relevant sprites, then adds any relevant sprites to the list
-        Console.WriteLine("FactionVisits requesting cancels for the change of target");
+        ModLogger.Log("Requesting cancels for the change of target");
         switch (role)
         {
             case Role.BODYGUARD:
@@ -382,7 +385,7 @@ internal class Manager
         }
         if (targetPlayer == -1 || sprite == null)
             return;
-        Console.WriteLine("FactionVisits adding icon to new target");
+        ModLogger.Log("Adding icon to new target");
         AddTarget(abilityId, targetPlayer, sprite, role, actorPlayer);
     }
 
@@ -421,7 +424,7 @@ internal class Manager
                 imgs.RemoveAt(i);
                 if (temp != null && temp.gameObject != null)
                 {
-                    Console.WriteLine("TOSTIV deleting icon " + temp.gameObject.name);
+                    ModLogger.Log("Deleting icon " + temp.gameObject.name);
                     temp.gameObject.SetActive(true);
                     UnityEngine.Object.DestroyImmediate(temp.gameObject);
                 }
@@ -454,8 +457,8 @@ internal class Manager
                     )
                 )
                     return sprite;
-                Console.WriteLine(
-                    $"FactionVisits no FancyUI sprite found for {instance.role}({ability})[{faction}], gonna retry with base faction"
+                ModLogger.Log(
+                    $"No FancyUI sprite found for {instance.role}({ability})[{faction}], gonna retry with base faction"
                 );
                 sprite = GetFancyUISprite(instance.role, null, ability);
                 if (
@@ -469,21 +472,22 @@ internal class Manager
                     )
                 )
                     return sprite;
-                Console.WriteLine(
-                    $"FactionVisits no FancyUI sprite found for {instance.role}({ability}), using vanilla sprite."
+                ModLogger.Log(
+                    $"No FancyUI sprite found for {instance.role}({ability}), using vanilla sprite."
                 );
             }
             catch (Exception e)
             {
-                Console.WriteLine(
-                    $"!!!!! FactionVisits got unexpected error when getting FancyUI sprite!!! !!!!!"
+                ModLogger.Log($"!!!!! Got unexpected error when getting FancyUI sprite!!! !!!!!");
+                ModLogger.Log(
+                    $"!!!!! Falling back to vanilla sprite, but get doggie to fix this. !!!!!"
                 );
-                Console.WriteLine(
-                    $"!!!!! FactionVisits Falling back to vanilla sprite, but get doggie to fix this. !!!!!"
+                ModLogger.Log("Fancy Error! " + e.Message);
+                ModLogger.Log("Fancy Error Source: " + e.Source);
+                ModLogger.Log("Fancy Error Trace: --\n" + e.StackTrace);
+                ModLogger.LogErrorToUserOnce(
+                    $"An error occurred getting FancyUI sprite! Falling back to vanilla sprites. This message will only be shown once. Tell doggie to fix this!\n\n '{e.Message}'-'{e.Source}'-'{e.StackTrace}'"
                 );
-                Console.WriteLine("FactionVisits Error! " + e.Message);
-                Console.WriteLine("FactionVisitsFancy ErrorSource: " + e.Source);
-                Console.WriteLine("FactionVisitsFancy ErrorTrace: --\n" + e.StackTrace);
             }
         }
         //Get vannila icons

@@ -11,7 +11,7 @@ public class Main
 {
     public void Start()
     {
-        Console.WriteLine("Modding time!");
+        ModLogger.Log("Modding time!");
         try
         {
             Settings.fancyUI = Assembly.LoadFrom(
@@ -20,7 +20,7 @@ public class Main
         }
         catch
         {
-            Console.WriteLine("FactionVisits Fancy UI was not found.");
+            ModLogger.Log("Fancy UI was not found.");
         }
         try
         {
@@ -30,7 +30,7 @@ public class Main
         }
         catch
         {
-            Console.WriteLine("FactionVisits BetterTOS2 was not found.");
+            ModLogger.Log("BetterTOS2 was not found.");
         }
     }
 }

@@ -21,14 +21,14 @@ internal class Cleaner
         if (gameInfoObservation.Data.gamePhase == GamePhase.PLAY && !hooked)
         {
             hooked = true;
-            Console.WriteLine("FactionVisits adding hook");
+            ModLogger.Log("Adding hook");
             Service.Game.Sim.simulation.incomingChatLogMessage.OnChanged +=
                 Interpreter.HandleMessages;
         }
         else if (gameInfoObservation.Data.gamePhase != GamePhase.PLAY && hooked)
         {
             hooked = false;
-            Console.WriteLine("FactionVisits removing hook");
+            ModLogger.Log("Removing hook");
             Service.Game.Sim.simulation.incomingChatLogMessage.OnChanged -=
                 Interpreter.HandleMessages;
         }
@@ -41,8 +41,8 @@ internal class Cleaner
             // tos2 retriggers this if someone dcs at night, make sure to not clear our night icons
             if (!clearedDayIcons)
             {
-                Console.WriteLine(
-                    $"FactionVisits Requesting icons clear because of playphase: "
+                ModLogger.Log(
+                    $"Requesting icons clear because of playphase: "
                         + gameInfoObservation.Data.playPhase
                 );
                 Manager.Instance.Clear();
@@ -59,8 +59,8 @@ internal class Cleaner
             //just in case
             if (!clearedNightIcons)
             {
-                Console.WriteLine(
-                    $"FactionVisits Requesting icons clear because of playphase: "
+                ModLogger.Log(
+                    $"Requesting icons clear because of playphase: "
                         + gameInfoObservation.Data.playPhase
                 );
                 Manager.Instance.Clear();
@@ -77,19 +77,15 @@ internal class Cleaner
             Manager.Instance.Reset();
             Manager.Instance.SetHandleOvercharged();
             Interpreter.Reset();
-            Console.WriteLine(
-                "FactionVisits do we handle overcharges?: " + Manager.Instance.handleOvercharged
-            );
-            Console.WriteLine("FactionVisits are we modded?: " + Manager.IsModded());
+            ModLogger.Log("Do we handle overcharges?: " + Manager.Instance.handleOvercharged);
+            ModLogger.Log("Are we modded?: " + Manager.IsModded());
             if (Manager.IsModded())
             {
                 FactionType myFaction = Service.Game.Sim.simulation.myIdentity.Data.faction;
                 Role myRole = Service.Game.Sim.simulation.myIdentity.Data.role;
                 if (myFaction == (FactionType)33 && myRole != (Role)55)
                     Manager.Instance.amIRecruited = true;
-                Console.WriteLine(
-                    "FactionVisits are we recruited?: " + Manager.Instance.amIRecruited
-                );
+                ModLogger.Log("Are we recruited?: " + Manager.Instance.amIRecruited);
             }
         }
     }
