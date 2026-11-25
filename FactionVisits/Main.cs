@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.Collections.Generic;
 using System.Reflection;
 using SML;
+using static DogUtils.DogUtils;
 
 namespace FactionVisits;
 
@@ -12,26 +11,11 @@ public class Main
     public void Start()
     {
         ModLogger.Log("Modding time!");
-        try
-        {
-            Settings.fancyUI = Assembly.LoadFrom(
-                Path.Combine(AppContext.BaseDirectory, "SalemModLoader\\Mods\\FancyUI.dll")
-            );
-        }
-        catch
-        {
-            ModLogger.Log("Fancy UI was not found.");
-        }
-        try
-        {
-            Settings.betterTos = Assembly.LoadFrom(
-                Path.Combine(AppContext.BaseDirectory, "SalemModLoader\\Mods\\BetterTOS2.dll")
-            );
-        }
-        catch
-        {
-            ModLogger.Log("BetterTOS2 was not found.");
-        }
+        Settings.fancyUI = GetLoadedAssembly("FancyUI");
+        Settings.betterTos = GetLoadedAssembly("BetterTOS2");
+
+        ModLogger.Log($"Is FancyUI Loaded: {Settings.fancyUI != null}");
+        ModLogger.Log($"Is BetterTOS2 Loaded: {Settings.betterTos != null}");
     }
 }
 

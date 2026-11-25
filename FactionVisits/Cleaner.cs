@@ -1,4 +1,4 @@
-using System;
+using BetterTOS2;
 using Game.Simulation;
 using HarmonyLib;
 using Server.Shared.Info;
@@ -18,14 +18,14 @@ internal class Cleaner
     [HarmonyPostfix]
     static void ClearIcons(GameInfoObservation gameInfoObservation)
     {
-        if (gameInfoObservation.Data.gamePhase == GamePhase.PLAY && !hooked)
+        if (Pepper.IsGamePhasePlay() && !hooked)
         {
             hooked = true;
             ModLogger.Log("Adding hook");
             Service.Game.Sim.simulation.incomingChatLogMessage.OnChanged +=
                 Interpreter.HandleMessages;
         }
-        else if (gameInfoObservation.Data.gamePhase != GamePhase.PLAY && hooked)
+        else if (!Pepper.IsGamePhasePlay() && hooked)
         {
             hooked = false;
             ModLogger.Log("Removing hook");
@@ -33,10 +33,7 @@ internal class Cleaner
                 Interpreter.HandleMessages;
         }
         // Clear Day Icons as we enter Night Phase
-        if (
-            gameInfoObservation.Data.gamePhase == GamePhase.PLAY
-            && gameInfoObservation.Data.playPhase == PlayPhase.NIGHT
-        )
+        if (Pepper.IsGamePhasePlay() && Pepper.IsNight())
         {
             // tos2 retriggers this if someone dcs at night, make sure to not clear our night icons
             if (!clearedDayIcons)
@@ -51,10 +48,7 @@ internal class Cleaner
             clearedNightIcons = false;
         }
         // Clear Night Icons as we enter Day Phase
-        if (
-            gameInfoObservation.Data.gamePhase == GamePhase.PLAY
-            && gameInfoObservation.Data.playPhase == PlayPhase.NIGHT_WRAP_UP
-        )
+        if (Pepper.IsGamePhasePlay() && Pepper.GetCurrentPlayPhase() == PlayPhase.NIGHT_WRAP_UP)
         {
             //just in case
             if (!clearedNightIcons)
@@ -69,10 +63,7 @@ internal class Cleaner
             clearedDayIcons = false;
             Manager.Instance.overchargedTeammate = -1;
         }
-        if (
-            gameInfoObservation.Data.gamePhase == GamePhase.PLAY
-            && gameInfoObservation.Data.playPhase == PlayPhase.FIRST_DISCUSSION
-        )
+        if (Pepper.IsGamePhasePlay() && Pepper.GetCurrentPlayPhase() == PlayPhase.FIRST_DISCUSSION)
         {
             Manager.Instance.Reset();
             Manager.Instance.SetHandleOvercharged();
@@ -81,9 +72,9 @@ internal class Cleaner
             ModLogger.Log("Are we modded?: " + Manager.IsModded());
             if (Manager.IsModded())
             {
-                FactionType myFaction = Service.Game.Sim.simulation.myIdentity.Data.faction;
-                Role myRole = Service.Game.Sim.simulation.myIdentity.Data.role;
-                if (myFaction == (FactionType)33 && myRole != (Role)55)
+                FactionType myFaction = Pepper.GetMyFaction();
+                Role myRole = Pepper.GetMyRole();
+                if (myFaction == FactionTypePlus.JACKAL && myRole != RolePlus.JACKAL)
                     Manager.Instance.amIRecruited = true;
                 ModLogger.Log("Are we recruited?: " + Manager.Instance.amIRecruited);
             }

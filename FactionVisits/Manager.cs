@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using BetterTOS2;
+using DogUtils;
 using Game.Interface;
-using Game.Simulation;
-using Server.Shared.Info;
 using Server.Shared.State;
 using Services;
 using SML;
@@ -67,7 +67,7 @@ internal class Manager
     {
         if (ModSettings.GetString("Handle Overcharged") == "Never")
             return false;
-        List<Role> modifiers = Service.Game.Sim.simulation.roleDeckBuilder.Data.modifierCards;
+        List<Role> modifiers = Pepper.GetCurrentGameSim().roleDeckBuilder.Data.modifierCards;
         if (
             (!IsModded() && modifiers.Contains(Role.ALL_OUTLIERS))
             || (IsModded() && modifiers.Contains((Role)231))
@@ -89,8 +89,14 @@ internal class Manager
                 && (roleDeckSlot.Role1 == Role.CATALYST || roleDeckSlot.Role2 == Role.CATALYST)
             )
                 return true;
-            if (IsModded() && (roleDeckSlot.Role1 == (Role)63 || roleDeckSlot.Role2 == (Role)63))
-                return true; //Role 63 is BTOS2 Catalyst
+            if (
+                IsModded()
+                && (
+                    roleDeckSlot.Role1 == RolePlus.CATALYST
+                    || roleDeckSlot.Role2 == RolePlus.CATALYST
+                )
+            )
+                return true;
         }
         return false;
     }
@@ -102,7 +108,7 @@ internal class Manager
 
     public static bool IsModded()
     {
-        if (Settings.betterTos == null || !ModStates.IsEnabled("curtis.tuba.better.tos2"))
+        if (Settings.betterTos is null || !ModStates.IsEnabled("curtis.tuba.better.tos2"))
             return false;
         Type btosInfo = Settings.betterTos.GetType("BetterTOS2.BTOSInfo");
         return (bool)
@@ -119,15 +125,13 @@ internal class Manager
             case "Never":
                 return false;
             case "Only as Factional Evil":
-                GameSimulation gameSimulation = Service.Game.Sim.simulation;
-                PlayerIdentityData myIdentity = (PlayerIdentityData)gameSimulation.myIdentity;
-                FactionType faction = myIdentity.faction;
+                FactionType faction = Pepper.GetMyFaction();
                 if (!Interpreter.factionsWithChat.Contains(faction))
                 {
                     return false;
                 }
-                if (Manager.IsModded() && myIdentity.role == (Role)55)
-                    return false; //Role 55 is BTOS2 Jackal
+                if (Manager.IsModded() && Pepper.GetMyRole() == RolePlus.JACKAL)
+                    return false;
                 return true;
             case "Always":
                 return true;
@@ -315,8 +319,7 @@ internal class Manager
                 break;
             case (Role)58: //Auditor in BTOS2, Covenite in Vanilla
             case (Role)59: //Inquisitor in BTOS2, Catalyst in Vanilla
-            case (Role)62: //Warlock in BTOS2
-            case (Role)65: //Socialite in BTOS2
+            case RolePlus.WARLOCK:
             case Role.DREAMWEAVER:
             case Role.JAILOR:
             case Role.SOCIALITE:
@@ -330,7 +333,7 @@ internal class Manager
                 CancelTarget(MenuChoiceType.NightAbility2, role, actorPlayer);
                 break;
             case Role.ORACLE:
-            case (Role)61: //Oracle in BTOS2
+            case RolePlus.ORACLE:
             case Role.VETERAN:
             case Role.ILLUSIONIST:
             case Role.COVENLEADER:
@@ -343,7 +346,7 @@ internal class Manager
                     CancelTarget(MenuChoiceType.SpecialAbility, role, actorPlayer);
                 }
                 break;
-            case (Role)66: //BTOS2 Pacifist
+            case RolePlus.PACIFIST: //BTOS2 Pacifist
                 if (!IsModded())
                     return;
                 CancelTarget(MenuChoiceType.NightAbility, role, actorPlayer);
@@ -507,10 +510,7 @@ internal class Manager
         Type fancyuiassman = Settings.fancyUI.GetType("FancyUI.Assets.FancyAssetManager");
         Type facnyuiutils = Settings.fancyUI.GetType("FancyUI.Utils");
         //Get role name
-        string RoleName = (string)
-            facnyuiutils
-                .GetMethod("RoleName", BindingFlags.Static | BindingFlags.Public)
-                .Invoke(null, [role, null]);
+        string RoleName = (string)facnyuiutils.InvokeMethodBySig("RoleName", [role]);
         //Add ability to name if needed
         switch (ability)
         {
@@ -530,37 +530,15 @@ internal class Manager
                 break;
         }
         //Get faction name
-        faction ??= (FactionType)
-            facnyuiutils
-                .GetMethod("GetFactionType", BindingFlags.Static | BindingFlags.Public)
-                .Invoke(null, [role, null]);
+        faction ??= (FactionType)facnyuiutils.InvokeMethodBySig("GetFactionType", [role]);
         string FactionName = (string)
-            facnyuiutils
-                .GetMethod(
-                    "FactionName",
-                    BindingFlags.Static | BindingFlags.Public,
-                    null,
-                    [
-                        typeof(FactionType),
-                        Settings.fancyUI.GetType("FancyUI.GameModType"),
-                        typeof(bool),
-                        typeof(bool),
-                        typeof(bool),
-                    ],
-                    null
-                )
-                .Invoke(null, [faction, null, true, false, true]);
+            facnyuiutils.InvokeMethodBySig("FactionName", [faction, null, true, false]);
         //Get sprite
         Sprite sprite = (Sprite)
-            fancyuiassman
-                .GetMethod(
-                    "GetSprite",
-                    BindingFlags.Static | BindingFlags.Public,
-                    null,
-                    [typeof(string), typeof(bool), typeof(string), typeof(string), typeof(bool)],
-                    null
-                )
-                .Invoke(null, [RoleName, true, FactionName, null, false]);
+            fancyuiassman.InvokeMethodBySig(
+                "GetSprite",
+                [RoleName, true, FactionName, null, false]
+            );
         //Make a 2nd check for ability 1 due to 2 options of file name
         if (
             ability == 1
@@ -576,21 +554,10 @@ internal class Manager
         {
             RoleName = RoleName[..RoleName.IndexOf("_1")];
             sprite = (Sprite)
-                fancyuiassman
-                    .GetMethod(
-                        "GetSprite",
-                        BindingFlags.Static | BindingFlags.Public,
-                        null,
-                        [
-                            typeof(string),
-                            typeof(bool),
-                            typeof(string),
-                            typeof(string),
-                            typeof(bool),
-                        ],
-                        null
-                    )
-                    .Invoke(null, [RoleName, true, FactionName, null, false]);
+                fancyuiassman.InvokeMethodBySig(
+                    "GetSprite",
+                    [RoleName, true, FactionName, null, false]
+                );
         }
         return sprite;
     }

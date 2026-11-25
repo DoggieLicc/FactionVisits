@@ -1,9 +1,9 @@
 using System;
+using System.Runtime.ConstrainedExecution;
 using Home.Common;
 using Server.Shared.Messages;
 using Server.Shared.State.Chat;
 using Services;
-using UnityEngine;
 
 public class ModLogger
 {
@@ -16,12 +16,12 @@ public class ModLogger
 
     public static void Log(string message)
     {
-        Debug.Log($"[FactionVisits] {message}");
+        Console.Write($"[FactionVisits] {message}");
     }
 
     public static void LogErrorToUserOnce(string message)
     {
-        Debug.Log($"[FactionVisits] {message}");
+        Log(message);
         if (!shownErrorToUser)
         {
             try

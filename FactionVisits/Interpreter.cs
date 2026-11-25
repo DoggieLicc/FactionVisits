@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BetterTOS2;
 using Game.Interface;
 using Game.Simulation;
 using Server.Shared.Info;
@@ -47,7 +48,7 @@ internal class Interpreter
         Role.POTIONMASTER,
         Role.AMNESIAC,
         Role.COVENLEADER,
-        (Role)65, // BTOS2 Socialite
+        RolePlus.SOCIALITE,
     ];
 
     // Factional evil factions
@@ -57,12 +58,13 @@ internal class Interpreter
         FactionType.APOCALYPSE,
         FactionType.VAMPIRE,
         FactionType.CURSED_SOUL,
-        (FactionType)33, //Jackal, needs incase recruited evil
-        (FactionType)34, //Frogs
-        (FactionType)35, //Lions
-        (FactionType)36, //Hawks
-        (FactionType)43, //Pandora
-        (FactionType)44, //Compliance
+        FactionTypePlus.JACKAL,
+        FactionTypePlus.FROGS,
+        FactionTypePlus.LIONS,
+        FactionTypePlus.HAWKS,
+        FactionTypePlus.PANDORA,
+        FactionTypePlus.COMPLIANCE,
+        FactionTypePlus.CANNIBAL,
     ];
 
     //Roles with non-instant day abilities
@@ -73,11 +75,10 @@ internal class Interpreter
         Role.CORONER,
         Role.SOCIALITE,
         Role.CULTIST,
-        Role.DOOMSAYER, //BTOS2 Doom moment
-        Role.PIRATE, //BTOS2 Pirate moment
-        Role.AMNESIAC, //BTOS2 Amne moment
-        (Role)64, //BTOS2 Cultist
-        (Role)65, //BTOS2 Socialite
+        RolePlus.DOOMSAYER,
+        RolePlus.PIRATE,
+        RolePlus.AMNESIAC,
+        RolePlus.CULTIST,
     ];
     public static Dictionary<Role, Role> acolyteToHorsemen = new()
     {
@@ -85,7 +86,7 @@ internal class Interpreter
         { Role.BERSERKER, Role.WAR },
         { Role.BAKER, Role.FAMINE },
         { Role.SOULCOLLECTOR, Role.DEATH },
-        { (Role)62, Role.DEATH }, //Warlock
+        { RolePlus.WARLOCK, Role.DEATH },
     };
 
     public static void Reset()
@@ -232,13 +233,13 @@ internal class Interpreter
             }
             if (clearOurIcons && Manager.ShowOwnActions())
             {
-                GameSimulation gameSimulation = Service.Game.Sim.simulation;
+                GameSimulation gameSimulation = Pepper.GetCurrentGameSim();
                 Manager.Instance.ChangeTarget(
                     MenuChoiceType.NightAbility,
                     -1,
                     null,
                     ourRole,
-                    Service.Game.Sim.simulation.myPosition
+                    Pepper.GetMyPosition()
                 );
                 ModLogger.Log("Clearing own icons due to potion/bread switch");
             }
@@ -248,12 +249,13 @@ internal class Interpreter
                 && Manager.ShowOwnActions()
             )
             {
-                RoleCardData rcData = Service.Game.Sim.info.roleCardObservation.Data;
-                GameSimulation gameSimulation = Service.Game.Sim.simulation;
+                RoleCardData rcData = Pepper
+                    .GetCurrentGameSim()
+                    .observations.roleCardObservation.Data;
                 int ourTarget = Manager.Instance.GetTarget(
                     MenuChoiceType.NightAbility,
                     ourRole,
-                    Service.Game.Sim.simulation.myPosition
+                    Pepper.GetMyPosition()
                 );
                 if (ourTarget == -1)
                     return;
@@ -268,14 +270,14 @@ internal class Interpreter
                 );
                 if (roleData == null || roleData.roleIcon == null)
                     return;
-                FactionType myFaction = Service.Game.Sim.simulation.myIdentity.Data.faction;
+                FactionType myFaction = Pepper.GetMyFaction();
                 Sprite sprite = Manager.GetSprite(roleData, myFaction, potionChoiceData);
                 Manager.Instance.ChangeTarget(
                     MenuChoiceType.NightAbility,
                     ourTarget,
                     sprite,
                     ourRole,
-                    Service.Game.Sim.simulation.myPosition
+                    Pepper.GetMyPosition()
                 );
                 ModLogger.Log("Replacing own icons due to doll switch");
                 if (rcData.hasNecronomicon && ModSettings.GetString("Book Icon") == "Add Icon")
@@ -288,14 +290,14 @@ internal class Interpreter
                         ourTarget,
                         bookSprite,
                         ourRole,
-                        Service.Game.Sim.simulation.myPosition
+                        Pepper.GetMyPosition()
                     );
                 }
             }
         }
         if (
             !(
-                Service.Game.Sim.info.gameInfo.Data.gamePhase == GamePhase.PLAY
+                Pepper.IsGamePhasePlay()
                 && (
                     chatLogMessage.chatLogEntry is ChatLogFactionTargetSelectionFeedbackEntry
                     || chatLogMessage.chatLogEntry is ChatLogTargetSelectionFeedbackEntry
@@ -314,7 +316,7 @@ internal class Interpreter
             bool isChangingTarget;
             bool isCancel;
             MenuChoiceType menuChoiceType;
-            FactionType teammateFaction = Service.Game.Sim.simulation.myIdentity.Data.faction;
+            FactionType teammateFaction = Pepper.GetMyFaction();
             bool isMe = false;
             int additData = 1;
 
@@ -335,18 +337,23 @@ internal class Interpreter
             }
             else
             {
-                GameSimulation gameSimulation = Service.Game.Sim.simulation;
-                RoleCardObservation roleCardObservation = Service.Game.Sim.info.roleCardObservation;
+                //RoleCardData rcData = Service.Game.Sim.info.roleCardObservation.Data;
+                RoleCardData rcData = Pepper
+                    .GetCurrentGameSim()
+                    .observations.roleCardObservation.Data;
+
                 ChatLogTargetSelectionFeedbackEntry data =
                     chatLogMessage.chatLogEntry as ChatLogTargetSelectionFeedbackEntry;
+
                 if (!Manager.ShowOwnActions())
                     return;
-                teammatePosition = gameSimulation.myPosition;
+
+                teammatePosition = Pepper.GetMyPosition();
                 teammateRole = data.currentRole;
                 teammateTarget1 = data.playerNumber1;
                 teammateTarget2 = data.playerNumber2;
                 teammateTargetRole = data.targetRoleId;
-                hasNecronomicon = roleCardObservation.Data.hasNecronomicon;
+                hasNecronomicon = rcData.hasNecronomicon;
                 isChangingTarget = data.bIsChangingTarget;
                 isCancel = data.bIsCancel;
                 menuChoiceType = data.menuChoiceType;
@@ -386,39 +393,26 @@ internal class Interpreter
                     || (teammateRole == Role.BAKER && Manager.IsModded())
                 )
             )
-            {
                 additData = potionChoiceData;
-            }
 
             // Set current amount of stone charges when we're medusa
             if (isMe && teammateRole == Role.MEDUSA)
-            {
-                additData = Service.Game.Sim.info.roleCardObservation.Data.normalAbilityRemaining;
-            }
+                additData = Pepper
+                    .GetCurrentGameSim()
+                    .observations.roleCardObservation.Data.normalAbilityRemaining;
 
             if (menuChoiceType == MenuChoiceType.SpecialAbility && teammateRole == Role.SHROUD)
             {
                 ModLogger.Log("Toggleable special ability data to cache");
                 if (tSpecialAbiilityData.ContainsKey(teammatePosition))
-                {
                     tSpecialAbiilityData[teammatePosition] = !isCancel;
-                }
                 else
-                {
                     tSpecialAbiilityData.Add(teammatePosition, !isCancel);
-                }
             }
 
-            bool isFullMoon =
-                Service.Game.Sim.info.gameInfo.Data.playPhase == PlayPhase.NIGHT
-                && (
-                    Service.Game.Sim.info.daytime.Data.daynightNumber > 4
-                    || Service.Game.Sim.info.daytime.Data.daynightNumber % 2 == 0
-                );
             float remainingTime = (float)
-                (
-                    Service.Game.Sim.simulation.playPhaseState.Data.playPhaseTime - DateTime.UtcNow
-                ).TotalSeconds;
+                (Pepper.GetCurrentPlayPhaseState().playPhaseTime - DateTime.UtcNow).TotalSeconds;
+
             int dayNightNumber = Service.Game.Sim.info.daytime.Data.daynightNumber;
             float secondHalfTime = Interpreter.isRapidMode ? 10f : 19f;
             ModLogger.Log("Remaining time: " + remainingTime);
@@ -429,7 +423,7 @@ internal class Interpreter
             if (
                 dayNightNumber > 1
                 && teammateRole != Role.CURSED_SOUL
-                && Service.Game.Sim.info.gameInfo.Data.playPhase == PlayPhase.NIGHT
+                && Pepper.IsNight()
                 && potentiallyOvercharged
                 && remainingTime <= secondHalfTime
                 && Manager.Instance.handleOvercharged
@@ -494,7 +488,7 @@ internal class Interpreter
             }
 
             //Only care about non-instant day abilites
-            if (Service.Game.Sim.info.gameInfo.Data.playPhase != PlayPhase.NIGHT)
+            if (!Pepper.IsNight())
             {
                 if (
                     !ModSettings.GetBool("Day Ability Icons")
@@ -557,7 +551,7 @@ internal class Interpreter
             //Handle BTOS2 Pacifist Rallies
             if (
                 Manager.IsModded()
-                && teammateRole == (Role)66
+                && teammateRole == RolePlus.PACIFIST
                 && !(hasNecronomicon && menuChoiceType == MenuChoiceType.NightAbility)
             )
             {
@@ -610,7 +604,7 @@ internal class Interpreter
             }
 
             //Manually set ability to scent for ww
-            if (!isFullMoon && teammateRole == Role.WEREWOLF)
+            if (!Pepper.IsFullMoonNight() && teammateRole == Role.WEREWOLF)
             {
                 menuChoiceType = MenuChoiceType.NightAbility2;
                 teammateTarget2 = teammateTarget1;
@@ -755,7 +749,8 @@ internal class Interpreter
                 bool replaceAbility =
                     (
                         (
-                            (BookReplacesAbility.Contains(teammateRole) && !isShrouding)
+                            BookReplacesAbility.Contains(teammateRole)
+                            && !isShrouding
                             && menuChoiceType == MenuChoiceType.NightAbility
                         )
                         || (
@@ -881,6 +876,7 @@ internal class Interpreter
                     || teammateRole == Role.SEER
                     || teammateRole == Role.WAR
                     || (Manager.IsModded() && teammateRole == Role.CORONER)
+                    || (Manager.IsModded() && teammateRole == RolePlus.SOCIALITE)
                 )
                 && menuChoiceType == MenuChoiceType.NightAbility2
             )
@@ -908,7 +904,7 @@ internal class Interpreter
                 Manager.IsModded()
                 && teammateRole == Role.AMNESIAC
                 && menuChoiceType == MenuChoiceType.SpecialAbility
-                && Service.Game.Sim.info.gameInfo.Data.playPhase != PlayPhase.NIGHT
+                && !Pepper.IsNight()
                 && teammateTargetRole != Role.NONE
             )
             {
@@ -1010,7 +1006,7 @@ internal class Interpreter
                         && ModSettings.GetString("Special Ability Icon") != "No Icon"
                         && (
                             (teammateRole == Role.ORACLE && !Manager.IsModded())
-                            || (teammateRole == (Role)61 && Manager.IsModded())
+                            || (teammateRole == RolePlus.ORACLE && Manager.IsModded())
                         )
                     )
                     {
